@@ -20,11 +20,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             // Use this method to release any resources that were specific to the discarded scenes, as they will not return.
     }
     
-        // Handle URL scheme callbacks (for OAuth redirects)
-    func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
-        NotificationCenter.default.post(name: .authCallbackReceived, object: url)
-        return true
-    }
+    // Note: URL handling is done in SceneDelegate.scene(_:openURLContexts:)
+    // to use the modern iOS 13+ UIScene lifecycle API
 }
 
 extension Notification.Name {
