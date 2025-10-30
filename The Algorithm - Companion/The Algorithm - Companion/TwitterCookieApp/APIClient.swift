@@ -20,7 +20,7 @@ class APIClient {
     // MARK: - Cookie Management
     
     func storeCookies(_ cookies: [HTTPCookie], completion: @escaping (Bool, Error?) -> Void) {
-        guard let token = authManager.getOAuthToken() else {
+        guard authManager.getOAuthToken() != nil else {
             completion(false, NSError(domain: "APIError", code: -1, userInfo: [NSLocalizedDescriptionKey: "No OAuth token available"]))
             return
         }
