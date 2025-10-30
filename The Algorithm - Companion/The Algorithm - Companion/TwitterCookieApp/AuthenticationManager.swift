@@ -69,6 +69,8 @@ class AuthenticationManager: NSObject {
         self.twitterCompletion = completion
         self.presentingViewController = viewController
         
+        print("🐦 Starting X.com authentication...")
+        
         let webView = createTwitterWebView()
         self.twitterWebView = webView
         
@@ -77,7 +79,13 @@ class AuthenticationManager: NSObject {
         
         // Load X.com login page
         let loginURL = URL(string: "https://x.com/login")!
-        webView.load(URLRequest(url: loginURL))
+        print("📍 Loading X.com URL: \(loginURL.absoluteString)")
+        
+        var request = URLRequest(url: loginURL)
+        request.setValue("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1", forHTTPHeaderField: "User-Agent")
+        
+        webView.load(request)
+        print("✅ WebView load initiated")
     }
     
     func getOAuthToken() -> String? {
@@ -143,10 +151,18 @@ class AuthenticationManager: NSObject {
     
     private func createTwitterWebView() -> WKWebView {
         let config = WKWebViewConfiguration()
-        config.websiteDataStore = WKWebsiteDataStore.nonPersistent() // Fresh session
+        config.websiteDataStore = WKWebsiteDataStore.default() // Use default to allow cookies
+        
+        // Enable JavaScript
+        let preferences = WKWebpagePreferences()
+        preferences.allowsContentJavaScript = true
+        config.defaultWebpagePreferences = preferences
         
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self
+        webView.allowsBackForwardNavigationGestures = true
+        
+        print("🌐 Created WebView with configuration")
         return webView
     }
     
@@ -343,10 +359,23 @@ class AuthenticationManager: NSObject {
 extension AuthenticationManager: WKNavigationDelegate {
     
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        print("✅ WebView finished loading: \(webView.url?.absoluteString ?? "unknown")")
         // Check if this is the Twitter authentication WebView
         if webView == twitterWebView {
             checkTwitterAuthenticationStatus(webView)
         }
+    }
+    
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        print("❌ WebView navigation failed: \(error.localizedDescription)")
+    }
+    
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        print("❌ WebView provisional navigation failed: \(error.localizedDescription)")
+    }
+    
+    func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        print("🔄 WebView started loading: \(webView.url?.absoluteString ?? "unknown")")
     }
     
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
