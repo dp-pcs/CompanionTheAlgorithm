@@ -93,6 +93,8 @@ class AuthenticationManager: NSObject {
         self.codeChallenge = challenge
         UserDefaults.standard.set(verifier, forKey: "pkce_code_verifier")
         print("💾 Saved PKCE verifier to UserDefaults")
+        print("   Verifier (first 20): \(verifier.prefix(20))...")
+        print("   Challenge (first 20): \(challenge.prefix(20))...")
         
         var components = URLComponents(string: oauthURL)
         components?.queryItems = [
@@ -221,6 +223,7 @@ class AuthenticationManager: NSObject {
         print("🔄 Exchanging authorization code for token...")
         print("   Token URL: \(tokenURL)")
         print("   Code: \(code.prefix(20))...")
+        print("   Using verifier (first 20): \(verifier.prefix(20))...")
         
         var request = URLRequest(url: URL(string: tokenURL)!)
         request.httpMethod = "POST"
@@ -230,6 +233,7 @@ class AuthenticationManager: NSObject {
         // Include code_verifier for PKCE verification
         let body = "grant_type=authorization_code&client_id=\(clientID)&code=\(code)&redirect_uri=\(redirectURI)&code_verifier=\(verifier)"
         request.httpBody = body.data(using: .utf8)
+        print("📤 Request body: grant_type=authorization_code&client_id=\(clientID)&code=\(code.prefix(20))...&redirect_uri=\(redirectURI)&code_verifier=\(verifier.prefix(20))...")
         
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
