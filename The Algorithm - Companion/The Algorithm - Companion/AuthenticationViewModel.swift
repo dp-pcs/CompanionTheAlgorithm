@@ -37,8 +37,19 @@ class AuthenticationViewModel: ObservableObject {
         isLoading = true
         loadingMessage = "Authenticating with The Algorithm..."
         
+        // Add timeout
+        let timeout = DispatchWorkItem { [weak self] in
+            self?.isLoading = false
+            self?.showAlert(
+                title: "Authentication Timeout",
+                message: "The authentication request took too long. Please check your internet connection and try again."
+            )
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 60, execute: timeout)
+        
         authManager.authenticateWithOAuth { [weak self] success, error in
             DispatchQueue.main.async {
+                timeout.cancel() // Cancel timeout if we got a response
                 self?.isLoading = false
                 
                 if success {
@@ -48,9 +59,11 @@ class AuthenticationViewModel: ObservableObject {
                         message: "OAuth authentication completed successfully. Now authenticate with X.com to continue."
                     )
                 } else {
+                    let errorMessage = error?.localizedDescription ?? "Failed to authenticate with The Algorithm. Please try again."
+                    print("❌ OAuth Error: \(errorMessage)")
                     self?.showAlert(
                         title: "Authentication Failed",
-                        message: error?.localizedDescription ?? "Failed to authenticate with The Algorithm. Please try again."
+                        message: errorMessage
                     )
                 }
             }

@@ -201,6 +201,7 @@ class AuthenticationManager: NSObject {
         var request = URLRequest(url: URL(string: tokenURL)!)
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 30 // 30 second timeout
         
         // Include code_verifier for PKCE verification
         let body = "grant_type=authorization_code&client_id=\(clientID)&code=\(code)&redirect_uri=\(redirectURI)&code_verifier=\(verifier)"
