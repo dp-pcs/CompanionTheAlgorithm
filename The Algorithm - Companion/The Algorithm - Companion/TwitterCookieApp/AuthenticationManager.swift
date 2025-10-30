@@ -103,15 +103,23 @@ class AuthenticationManager: NSObject {
         print("   Challenge (first 20): \(challenge.prefix(20))...")
         
         var components = URLComponents(string: oauthURL)
+        let state = UUID().uuidString
         components?.queryItems = [
             URLQueryItem(name: "client_id", value: clientID),
             URLQueryItem(name: "redirect_uri", value: redirectURI),
             URLQueryItem(name: "response_type", value: "code"),
             URLQueryItem(name: "scope", value: "read,write"), // Backend expects comma-separated
-            URLQueryItem(name: "state", value: UUID().uuidString), // CSRF protection
+            URLQueryItem(name: "state", value: state), // CSRF protection
             URLQueryItem(name: "code_challenge", value: challenge), // PKCE
             URLQueryItem(name: "code_challenge_method", value: "S256") // SHA256
         ]
+        
+        if let url = components?.url {
+            print("🔗 OAuth URL created:")
+            print("   Full URL: \(url.absoluteString)")
+            print("   Challenge being sent: \(challenge)")
+        }
+        
         return components?.url
     }
     
