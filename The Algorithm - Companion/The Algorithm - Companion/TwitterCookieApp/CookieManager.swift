@@ -15,10 +15,10 @@ class CookieManager {
                 "value": cookie.value,
                 "domain": cookie.domain,
                 "path": cookie.path,
-                "expires": cookie.expiresDate?.timeIntervalSince1970 ?? 0,
+                "expires": cookie.expiresDate?.timeIntervalSince1970 as Any? ?? 0,
                 "httpOnly": cookie.isHTTPOnly,
                 "secure": cookie.isSecure,
-                "sameSite": cookie.sameSitePolicy?.rawValue ?? ""
+                "sameSite": cookie.sameSitePolicy?.rawValue as Any? ?? ""
             ]
         }
         
