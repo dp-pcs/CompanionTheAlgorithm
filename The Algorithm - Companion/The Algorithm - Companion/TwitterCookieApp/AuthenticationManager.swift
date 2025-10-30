@@ -32,6 +32,12 @@ class AuthenticationManager: NSObject {
     func authenticateWithOAuth(completion: @escaping (Bool, Error?) -> Void) {
         self.oauthCompletion = completion
         
+        // Clear any old PKCE verifier from previous attempts
+        UserDefaults.standard.removeObject(forKey: "pkce_code_verifier")
+        self.codeVerifier = nil
+        self.codeChallenge = nil
+        print("🧹 Cleared old PKCE codes, starting fresh")
+        
         // Listen for OAuth callback
         NotificationCenter.default.addObserver(
             self,
