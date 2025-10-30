@@ -159,15 +159,28 @@ class AuthenticationManager: NSObject {
     }
     
     @objc private func handleOAuthCallback(_ notification: Notification) {
-        guard let url = notification.object as? URL,
-              let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-              let queryItems = components.queryItems else {
+        print("🔔 OAuth callback received!")
+        
+        guard let url = notification.object as? URL else {
+            print("❌ No URL in notification")
             oauthCompletion?(false, NSError(domain: "AuthError", code: -4, userInfo: [NSLocalizedDescriptionKey: "Invalid callback URL"]))
             return
         }
         
+        print("📍 Callback URL: \(url.absoluteString)")
+        
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let queryItems = components.queryItems else {
+            print("❌ Failed to parse URL components")
+            oauthCompletion?(false, NSError(domain: "AuthError", code: -4, userInfo: [NSLocalizedDescriptionKey: "Invalid callback URL"]))
+            return
+        }
+        
+        print("🔍 Query items: \(queryItems.map { "\($0.name)=\($0.value ?? "nil")" }.joined(separator: ", "))")
+        
         // Extract authorization code
         if let code = queryItems.first(where: { $0.name == "code" })?.value {
+            print("✅ Authorization code found: \(code.prefix(20))...")
             // Exchange code for token (you'll need to implement this based on your OAuth provider)
             exchangeCodeForToken(code) { [weak self] token, error in
                 if let token = token {
@@ -179,8 +192,10 @@ class AuthenticationManager: NSObject {
                 }
             }
         } else if let error = queryItems.first(where: { $0.name == "error" })?.value {
+            print("❌ OAuth error in callback: \(error)")
             oauthCompletion?(false, NSError(domain: "AuthError", code: -5, userInfo: [NSLocalizedDescriptionKey: "OAuth error: \(error)"]))
         } else {
+            print("❌ No authorization code in callback URL")
             oauthCompletion?(false, NSError(domain: "AuthError", code: -6, userInfo: [NSLocalizedDescriptionKey: "No authorization code received"]))
         }
         

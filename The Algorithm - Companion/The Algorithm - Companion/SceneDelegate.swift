@@ -41,7 +41,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     // Handle URL scheme callbacks
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
-        guard let url = URLContexts.first?.url else { return }
+        print("🌐 SceneDelegate received URL callback")
+        guard let url = URLContexts.first?.url else {
+            print("❌ No URL in openURLContexts")
+            return
+        }
+        print("📲 Opening URL: \(url.absoluteString)")
         NotificationCenter.default.post(name: .authCallbackReceived, object: url)
+        print("✉️ Notification posted to authCallbackReceived")
     }
 }
