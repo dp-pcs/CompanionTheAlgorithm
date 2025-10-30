@@ -42,6 +42,18 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     // Handle URL scheme callbacks
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
         print("🌐 SceneDelegate received URL callback")
+        
+        // Show visual alert for debugging
+        DispatchQueue.main.async {
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+               let window = windowScene.windows.first,
+               let rootVC = window.rootViewController {
+                let alert = UIAlertController(title: "URL Received", message: "SceneDelegate got the callback!", preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "OK", style: .default))
+                rootVC.present(alert, animated: true)
+            }
+        }
+        
         guard let url = URLContexts.first?.url else {
             print("❌ No URL in openURLContexts")
             return
