@@ -88,9 +88,11 @@ class AuthenticationManager: NSObject {
             return nil
         }
         
-        // Store verifier for token exchange
+        // Store verifier for token exchange (persist to UserDefaults in case app is suspended)
         self.codeVerifier = verifier
         self.codeChallenge = challenge
+        UserDefaults.standard.set(verifier, forKey: "pkce_code_verifier")
+        print("💾 Saved PKCE verifier to UserDefaults")
         
         var components = URLComponents(string: oauthURL)
         components?.queryItems = [
@@ -203,8 +205,15 @@ class AuthenticationManager: NSObject {
     }
     
     private func exchangeCodeForToken(_ code: String, completion: @escaping (String?, Error?) -> Void) {
-        guard let verifier = codeVerifier else {
-            print("❌ Missing PKCE code verifier")
+        // Try to get verifier from memory first, then UserDefaults
+        var verifier = codeVerifier
+        if verifier == nil {
+            verifier = UserDefaults.standard.string(forKey: "pkce_code_verifier")
+            print("📂 Retrieved PKCE verifier from UserDefaults")
+        }
+        
+        guard let verifier = verifier else {
+            print("❌ Missing PKCE code verifier (checked memory and UserDefaults)")
             completion(nil, NSError(domain: "AuthError", code: -10, userInfo: [NSLocalizedDescriptionKey: "Missing PKCE code verifier"]))
             return
         }
@@ -249,6 +258,8 @@ class AuthenticationManager: NSObject {
             }
             
             print("✅ Successfully obtained access token")
+            // Clear the stored verifier after successful exchange
+            UserDefaults.standard.removeObject(forKey: "pkce_code_verifier")
             completion(token, nil)
         }.resume()
     }
