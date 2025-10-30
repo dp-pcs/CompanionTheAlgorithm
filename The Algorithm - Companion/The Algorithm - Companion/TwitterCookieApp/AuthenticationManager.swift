@@ -106,7 +106,8 @@ class AuthenticationManager: NSObject {
     }
     
     private func presentOAuthWebView(url: URL) {
-        guard let topViewController = UIApplication.shared.windows.first?.rootViewController else {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let topViewController = windowScene.windows.first?.rootViewController else {
             oauthCompletion?(false, NSError(domain: "AuthError", code: -3, userInfo: [NSLocalizedDescriptionKey: "No presenting view controller"]))
             return
         }
