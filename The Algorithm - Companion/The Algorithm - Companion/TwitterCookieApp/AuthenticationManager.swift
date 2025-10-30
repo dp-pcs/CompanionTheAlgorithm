@@ -189,9 +189,14 @@ class AuthenticationManager: NSObject {
     
     private func exchangeCodeForToken(_ code: String, completion: @escaping (String?, Error?) -> Void) {
         guard let verifier = codeVerifier else {
+            print("❌ Missing PKCE code verifier")
             completion(nil, NSError(domain: "AuthError", code: -10, userInfo: [NSLocalizedDescriptionKey: "Missing PKCE code verifier"]))
             return
         }
+        
+        print("🔄 Exchanging authorization code for token...")
+        print("   Token URL: \(tokenURL)")
+        print("   Code: \(code.prefix(20))...")
         
         var request = URLRequest(url: URL(string: tokenURL)!)
         request.httpMethod = "POST"
@@ -203,17 +208,31 @@ class AuthenticationManager: NSObject {
         
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
+                print("❌ Network error during token exchange: \(error.localizedDescription)")
                 completion(nil, error)
                 return
+            }
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                print("📨 Token exchange response status: \(httpResponse.statusCode)")
+            }
+            
+            if let data = data {
+                print("📦 Response data: \(String(data: data, encoding: .utf8) ?? "Unable to decode")")
             }
             
             guard let data = data,
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let token = json["access_token"] as? String else {
+                print("❌ Failed to parse token response")
+                if let data = data, let responseString = String(data: data, encoding: .utf8) {
+                    print("   Response body: \(responseString)")
+                }
                 completion(nil, NSError(domain: "AuthError", code: -7, userInfo: [NSLocalizedDescriptionKey: "Failed to parse token response"]))
                 return
             }
             
+            print("✅ Successfully obtained access token")
             completion(token, nil)
         }.resume()
     }

@@ -10,9 +10,22 @@
 		99C631542EB31014008442DF /* The Algorithm - Companion.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "The Algorithm - Companion.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		99C6340F2EB3AC03008442DF /* Exceptions for "The Algorithm - Companion" folder in "The Algorithm - Companion" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"The-Algorithm---Companion-Info.plist",
+			);
+			target = 99C631532EB31014008442DF /* The Algorithm - Companion */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		99C631562EB31014008442DF /* The Algorithm - Companion */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				99C6340F2EB3AC03008442DF /* Exceptions for "The Algorithm - Companion" folder in "The Algorithm - Companion" target */,
+			);
 			path = "The Algorithm - Companion";
 			sourceTree = "<group>";
 		};
@@ -256,6 +269,7 @@
 				DEVELOPMENT_TEAM = AGG992B2UB;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "The-Algorithm---Companion-Info.plist";
 				INFOPLIST_KEY_CFBundleURLTypes = "{\n    CFBundleTypeRole = Editor;\n    CFBundleURLName = \"proctorconsultingservices.The-Algorithm---Companion\";\n    CFBundleURLSchemes =     (\n        thealgorithm\n    );\n}";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -289,6 +303,7 @@
 				DEVELOPMENT_TEAM = AGG992B2UB;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "The-Algorithm---Companion-Info.plist";
 				INFOPLIST_KEY_CFBundleURLTypes = "{\n    CFBundleTypeRole = Editor;\n    CFBundleURLName = \"proctorconsultingservices.The-Algorithm---Companion\";\n    CFBundleURLSchemes =     (\n        thealgorithm\n    );\n}";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
