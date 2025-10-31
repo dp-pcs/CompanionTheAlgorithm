@@ -80,7 +80,7 @@ struct FeedPost: Codable, Identifiable {
     let isRetweet: Bool
     let isReply: Bool
     let replyText: String?
-    let replyStatus: String
+    var replyStatus: String  // Changed to var to allow updates after bulk operations
     let replyId: String?
     let url: URL?
 
