@@ -238,6 +238,119 @@ struct MonitoredUser: Codable, Identifiable {
     }
 }
 
+// MARK: - Bulk Compose Models
+
+struct BulkComposePost: Codable, Identifiable {
+    let id: String
+    let sessionId: String
+    let userId: String
+    var text: String
+    var status: String  // draft, approved, scheduled, posted, rejected, failed
+    let orderIndex: Int
+    var scheduledFor: Date?
+    let postedAt: Date?
+    let postUrl: String?
+    let createdAt: Date
+    let updatedAt: Date
+    let userRating: Int?
+    let engagementScore: Double?
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case sessionId = "session_id"
+        case userId = "user_id"
+        case text
+        case status
+        case orderIndex = "order_index"
+        case scheduledFor = "scheduled_for"
+        case postedAt = "posted_at"
+        case postUrl = "post_url"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case userRating = "user_rating"
+        case engagementScore = "engagement_score"
+    }
+}
+
+struct BulkComposeSession: Codable, Identifiable {
+    let id: String
+    let userId: String
+    let prompt: String
+    let postsGenerated: Int
+    let status: String  // generating, completed, failed
+    let createdAt: Date
+    let updatedAt: Date
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId = "user_id"
+        case prompt
+        case postsGenerated = "posts_generated"
+        case status
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+}
+
+struct PublishingStatus: Codable {
+    struct JobStatus: Codable {
+        let total: Int
+        let queued: Int
+        let scheduled: Int
+        let processing: Int
+        let completed: Int
+        let failed: Int
+    }
+    
+    struct Job: Codable {
+        let id: String
+        let status: String
+        let scheduledFor: Date?
+        let method: String
+        let text: String
+        let createdAt: Date
+        let completedAt: Date?
+        let errorMessage: String?
+        
+        enum CodingKeys: String, CodingKey {
+            case id, status, method, text
+            case scheduledFor = "scheduled_for"
+            case createdAt = "created_at"
+            case completedAt = "completed_at"
+            case errorMessage = "error_message"
+        }
+    }
+    
+    let jobs: [Job]
+    let status: JobStatus
+}
+
+struct RandomScheduleResponse: Codable {
+    struct ScheduledPost: Codable {
+        let postId: String
+        let scheduledFor: Date
+        let text: String
+        
+        enum CodingKeys: String, CodingKey {
+            case postId = "post_id"
+            case scheduledFor = "scheduled_for"
+            case text
+        }
+    }
+    
+    let totalPosts: Int
+    let startTime: Date
+    let endTime: Date
+    let scheduledPosts: [ScheduledPost]
+    
+    enum CodingKeys: String, CodingKey {
+        case totalPosts = "total_posts"
+        case startTime = "start_time"
+        case endTime = "end_time"
+        case scheduledPosts = "scheduled_posts"
+    }
+}
+
 struct SettingsStatus: Codable {
     struct LLMProviders: Codable {
         let openai: Bool
@@ -775,6 +888,120 @@ class APIClient {
     func bulkLikeTweets(tweetIds: [String], completion: @escaping (Result<BulkOperationResponse, Error>) -> Void) {
         let formData = ["tweet_ids": tweetIds.joined(separator: ",")]
         performFormRequest(path: "/api/v1/replies/twikit/like-tweets-bulk", method: "POST", formData: formData, completion: completion)
+    }
+    
+    // MARK: - Bulk Compose Operations
+    
+    func createBulkComposeSession(prompt: String, numPosts: Int = 10, completion: @escaping (Result<BulkComposeSession, Error>) -> Void) {
+        let body = [
+            "prompt": prompt,
+            "num_posts": numPosts
+        ] as [String: Any]
+        
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: body) else {
+            completion(.failure(APIClientError.requestFailed("Failed to encode request")))
+            return
+        }
+        
+        performRequest(path: "/api/v1/bulk-compose/sessions", method: "POST", body: jsonData, completion: completion)
+    }
+    
+    func fetchBulkComposePosts(sessionId: String, status: String? = nil, completion: @escaping (Result<[BulkComposePost], Error>) -> Void) {
+        var items: [URLQueryItem] = []
+        if let status = status {
+            items.append(URLQueryItem(name: "status", value: status))
+        }
+        performRequest(path: "/api/v1/bulk-compose/sessions/\(sessionId)/posts", queryItems: items, completion: completion)
+    }
+    
+    func approvePost(postId: String, completion: @escaping (Result<BulkComposePost, Error>) -> Void) {
+        performRequest(path: "/api/v1/bulk-compose/posts/\(postId)/approve", method: "POST", completion: completion)
+    }
+    
+    func batchApprovePosts(postIds: [String], completion: @escaping (Result<BulkOperationResponse, Error>) -> Void) {
+        let formData = ["post_ids": postIds.joined(separator: ",")]
+        performFormRequest(path: "/api/v1/bulk-compose/posts/batch-approve", method: "POST", formData: formData, completion: completion)
+    }
+    
+    func updatePost(postId: String, text: String? = nil, status: String? = nil, scheduledFor: Date? = nil, completion: @escaping (Result<BulkComposePost, Error>) -> Void) {
+        var body: [String: Any] = [:]
+        if let text = text {
+            body["text"] = text
+        }
+        if let status = status {
+            body["status"] = status
+        }
+        if let scheduledFor = scheduledFor {
+            let formatter = ISO8601DateFormatter()
+            body["scheduled_for"] = formatter.string(from: scheduledFor)
+        }
+        
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: body) else {
+            completion(.failure(APIClientError.requestFailed("Failed to encode request")))
+            return
+        }
+        
+        performRequest(path: "/api/v1/bulk-compose/posts/\(postId)", method: "PUT", body: jsonData, completion: completion)
+    }
+    
+    func deletePost(postId: String, completion: @escaping (Result<Bool, Error>) -> Void) {
+        performRequest(path: "/api/v1/bulk-compose/posts/\(postId)", method: "DELETE") { (result: Result<[String: String], Error>) in
+            switch result {
+            case .success:
+                completion(.success(true))
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+    }
+    
+    func publishPosts(postIds: [String], scheduleMode: String, scheduledFor: Date? = nil, staggerIntervalMinutes: Int? = nil, completion: @escaping (Result<PublishingStatus, Error>) -> Void) {
+        var body: [String: Any] = [
+            "post_ids": postIds,
+            "publishing_method": "twikit",
+            "schedule_mode": scheduleMode
+        ]
+        
+        if let scheduledFor = scheduledFor {
+            let formatter = ISO8601DateFormatter()
+            body["scheduled_for"] = formatter.string(from: scheduledFor)
+        }
+        
+        if let staggerIntervalMinutes = staggerIntervalMinutes {
+            body["stagger_interval_minutes"] = staggerIntervalMinutes
+        }
+        
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: body) else {
+            completion(.failure(APIClientError.requestFailed("Failed to encode request")))
+            return
+        }
+        
+        performRequest(path: "/api/v1/bulk-compose/posts/publish", method: "POST", body: jsonData, completion: completion)
+    }
+    
+    func schedulePostsRandomly(postIds: [String], timeWindowHours: Int, minIntervalMinutes: Int, maxIntervalMinutes: Int, startTime: Date? = nil, completion: @escaping (Result<RandomScheduleResponse, Error>) -> Void) {
+        var body: [String: Any] = [
+            "post_ids": postIds,
+            "time_window_hours": timeWindowHours,
+            "min_interval_minutes": minIntervalMinutes,
+            "max_interval_minutes": maxIntervalMinutes
+        ]
+        
+        if let startTime = startTime {
+            let formatter = ISO8601DateFormatter()
+            body["start_time"] = formatter.string(from: startTime)
+        }
+        
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: body) else {
+            completion(.failure(APIClientError.requestFailed("Failed to encode request")))
+            return
+        }
+        
+        performRequest(path: "/api/v1/bulk-compose/posts/schedule-random", method: "POST", body: jsonData, completion: completion)
+    }
+    
+    func fetchPublishingStatus(sessionId: String, completion: @escaping (Result<PublishingStatus, Error>) -> Void) {
+        performRequest(path: "/api/v1/bulk-compose/sessions/\(sessionId)/publishing-status", completion: completion)
     }
     
     private func performFormRequest<T: Decodable>(

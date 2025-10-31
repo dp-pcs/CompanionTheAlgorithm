@@ -211,9 +211,9 @@ private struct DashboardView: View {
             .badge(queueBadgeCount)
             
             NavigationStack {
-                DraftsView(apiClient: viewModel.apiClient, isAuthenticated: isAuthenticated)
+                BulkComposeView(apiClient: viewModel.apiClient, isAuthenticated: isAuthenticated)
             }
-            .tabItem { Label("Drafts", systemImage: "doc.text") }
+            .tabItem { Label("My Posts", systemImage: "square.and.pencil") }
             
             NavigationStack {
                 MonitoredUsersView(apiClient: viewModel.apiClient, isAuthenticated: isAuthenticated)
