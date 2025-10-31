@@ -358,10 +358,28 @@ struct BulkOperationResult: Codable {
     init(from decoder: Decoder) throws {
         print("🔧 BulkOperationResult decoder v2.0 (with replyId support)")
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        postId = try container.decode(String.self, forKey: .postId)
+        
+        // Debug: Print all available keys
+        print("🔍 Available keys in container: \(container.allKeys)")
+        print("🔍 Expecting keys: post_id, reply_id, success, message")
+        
+        // Try to decode each field with detailed error handling
+        do {
+            postId = try container.decode(String.self, forKey: .postId)
+            print("✅ Decoded postId: \(postId)")
+        } catch {
+            print("❌ Failed to decode postId: \(error)")
+            throw error
+        }
+        
         replyId = try container.decodeIfPresent(String.self, forKey: .replyId)
+        print("✅ Decoded replyId: \(replyId ?? "nil")")
+        
         success = try container.decode(Bool.self, forKey: .success)
+        print("✅ Decoded success: \(success)")
+        
         message = try container.decodeIfPresent(String.self, forKey: .message)
+        print("✅ Decoded message: \(message ?? "nil")")
     }
 }
 
