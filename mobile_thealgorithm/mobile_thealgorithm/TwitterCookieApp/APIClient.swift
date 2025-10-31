@@ -729,9 +729,15 @@ class APIClient {
         var request = URLRequest(url: url)
         request.httpMethod = method
         
+        print("📤 API Request: \(method) \(url.absoluteString)")
+        print("   Form data: \(formData)")
+        
         // Add OAuth token if available
         if let token = authManager.getOAuthToken() {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            print("   🔑 Using OAuth token: \(token.prefix(20))...")
+        } else {
+            print("   ⚠️ No OAuth token available!")
         }
         
         // Build form data
@@ -763,6 +769,11 @@ class APIClient {
                 if let httpResponse = response as? HTTPURLResponse {
                     print("📡 Response status: \(httpResponse.statusCode) for \(path)")
                     
+                    // Always print response body for debugging
+                    if let responseString = String(data: data, encoding: .utf8) {
+                        print("📄 Response body: \(responseString)")
+                    }
+                    
                     if httpResponse.statusCode >= 400 {
                         if let errorString = String(data: data, encoding: .utf8) {
                             print("❌ Error response: \(errorString)")
@@ -778,6 +789,20 @@ class APIClient {
                     let decoder = JSONDecoder()
                     decoder.keyDecodingStrategy = .convertFromSnakeCase
                     let decoded = try decoder.decode(T.self, from: data)
+                    
+                    // Special debugging for BulkOperationResponse
+                    if let bulkResponse = decoded as? BulkOperationResponse {
+                        print("🔍 Bulk operation results:")
+                        print("   Total: \(bulkResponse.total)")
+                        print("   Successful: \(bulkResponse.successful)")
+                        print("   Failed: \(bulkResponse.failed)")
+                        for (index, result) in bulkResponse.results.enumerated() {
+                            if !result.success {
+                                print("   ❌ Post \(index + 1) (\(result.postId)): \(result.message ?? "unknown error")")
+                            }
+                        }
+                    }
+                    
                     completion(.success(decoded))
                 } catch {
                     print("❌ Decoding error: \(error)")
