@@ -284,6 +284,20 @@ struct SettingsStatus: Codable {
     }
 }
 
+struct APIKeyStatus: Codable {
+    let usingSystemKeys: Bool
+    let needsOwnKeys: Bool
+    let availableProviders: [String]
+    let isProUser: Bool
+    
+    enum CodingKeys: String, CodingKey {
+        case usingSystemKeys = "using_system_keys"
+        case needsOwnKeys = "needs_own_keys"
+        case availableProviders = "available_providers"
+        case isProUser = "is_pro_user"
+    }
+}
+
 struct MonitoringStatus: Codable {
     struct EngagementSettings: Codable {
         let currentUserUsername: String?
@@ -487,6 +501,24 @@ class APIClient {
 
     func fetchSettingsStatus(completion: @escaping (Result<SettingsStatus, Error>) -> Void) {
         performRequest(path: "/api/v1/settings/status", completion: completion)
+    }
+    
+    func fetchAPIKeyStatus(completion: @escaping (Result<APIKeyStatus, Error>) -> Void) {
+        print("🔑 Fetching API key status...")
+        performRequest(path: "/api/api-key-status", completion: { (result: Result<APIKeyStatus, Error>) in
+            switch result {
+            case .success(let status):
+                print("✅ API Key Status:")
+                print("   using_system_keys: \(status.usingSystemKeys)")
+                print("   needs_own_keys: \(status.needsOwnKeys)")
+                print("   available_providers: \(status.availableProviders)")
+                print("   is_pro_user: \(status.isProUser)")
+                completion(.success(status))
+            case .failure(let error):
+                print("❌ Failed to fetch API key status: \(error)")
+                completion(.failure(error))
+            }
+        })
     }
 
     // MARK: Health Check

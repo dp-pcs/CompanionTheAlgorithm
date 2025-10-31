@@ -108,6 +108,12 @@ private struct AuthenticationFlowView: View {
                             Label("Check API Health", systemImage: "heart.text.square")
                         }
                         
+                        if viewModel.hasOAuthToken {
+                            Button(action: { viewModel.checkAPIKeyStatus() }) {
+                                Label("Check API Key Status", systemImage: "key.fill")
+                            }
+                        }
+                        
                         if viewModel.hasOAuthToken || viewModel.hasCookies {
                             Divider()
                             Button(action: { viewModel.logoutAndReauthenticate() }) {
@@ -173,6 +179,9 @@ private struct DashboardView: View {
                         Menu {
                             Button(action: { viewModel.checkAPIHealth() }) {
                                 Label("Check API Health", systemImage: "heart.text.square")
+                            }
+                            Button(action: { viewModel.checkAPIKeyStatus() }) {
+                                Label("Check API Key Status", systemImage: "key.fill")
                             }
                             Divider()
                             Button(action: { viewModel.logoutAndReauthenticate() }) {

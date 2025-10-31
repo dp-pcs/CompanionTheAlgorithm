@@ -184,6 +184,50 @@ class AuthenticationViewModel: ObservableObject {
         }
     }
     
+    func checkAPIKeyStatus() {
+        isLoading = true
+        loadingMessage = "Checking API key status..."
+        
+        apiClient.fetchAPIKeyStatus { [weak self] result in
+            DispatchQueue.main.async {
+                self?.isLoading = false
+                
+                switch result {
+                case .success(let status):
+                    var message = ""
+                    
+                    if status.usingSystemKeys {
+                        message = "✅ You're using system-provided LLM keys (Pro/Pro+ user).\n\n"
+                        message += "All features enabled! No additional setup needed."
+                    } else if status.needsOwnKeys {
+                        if status.availableProviders.isEmpty {
+                            message = "⚠️ You need to add your own LLM API keys.\n\n"
+                            message += "Please visit Settings on thealgorithm.live to add keys."
+                        } else {
+                            message = "✅ Your LLM keys are configured!\n\n"
+                            message += "Available providers: \(status.availableProviders.joined(separator: ", "))"
+                        }
+                    }
+                    
+                    if status.isProUser {
+                        message += "\n\n🌟 Pro User Status Active"
+                    }
+                    
+                    self?.showAlert(
+                        title: "API Key Status",
+                        message: message
+                    )
+                    
+                case .failure(let error):
+                    self?.showAlert(
+                        title: "Error Checking Keys",
+                        message: "Failed to fetch API key status: \(error.localizedDescription)"
+                    )
+                }
+            }
+        }
+    }
+    
     // MARK: - Clear Data
     
     func clearAllData(showConfirmation: Bool = true) {
