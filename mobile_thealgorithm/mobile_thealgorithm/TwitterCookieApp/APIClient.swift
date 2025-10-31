@@ -353,6 +353,16 @@ struct BulkOperationResult: Codable {
         case success
         case message
     }
+    
+    // Debug: Confirm this version of the struct is being used
+    init(from decoder: Decoder) throws {
+        print("🔧 BulkOperationResult decoder v2.0 (with replyId support)")
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        postId = try container.decode(String.self, forKey: .postId)
+        replyId = try container.decodeIfPresent(String.self, forKey: .replyId)
+        success = try container.decode(Bool.self, forKey: .success)
+        message = try container.decodeIfPresent(String.self, forKey: .message)
+    }
 }
 
 enum APIClientError: Error {
