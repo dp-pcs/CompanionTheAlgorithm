@@ -730,7 +730,7 @@ class APIClient {
         request.httpMethod = method
         
         // Add OAuth token if available
-        if let token = authManager.getAccessToken() {
+        if let token = authManager.getOAuthToken() {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         
