@@ -10,6 +10,15 @@ final class FeedViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var infoMessage: String?
     @Published var lastFetchSummary: String?
+    
+    // Selection & Bulk Operations
+    @Published var selectedPostIds: Set<String> = []
+    @Published var isBulkGenerating = false
+    @Published var isBulkLiking = false
+    @Published var showSuccessAlert = false
+    @Published var showErrorAlert = false
+    @Published var successMessage: String?
+    @Published var bulkErrorMessage: String?
 
     private let apiClient: APIClient
     private var monitoringStatus: MonitoringStatus?
@@ -120,6 +129,115 @@ final class FeedViewModel: ObservableObject {
 #if DEBUG
         print("🗒️ [FeedViewModel] \(message)")
 #endif
+    }
+    
+    // MARK: - Selection & Bulk Operations
+    
+    func toggleSelection(for postId: String) {
+        if selectedPostIds.contains(postId) {
+            selectedPostIds.remove(postId)
+        } else {
+            selectedPostIds.insert(postId)
+        }
+    }
+    
+    func toggleSelectAll() {
+        if selectedPostIds.count == posts.count {
+            selectedPostIds.removeAll()
+        } else {
+            selectedPostIds = Set(posts.map { $0.id })
+        }
+    }
+    
+    func bulkGenerateReplies() {
+        guard !selectedPostIds.isEmpty, !isBulkGenerating else { return }
+        
+        isBulkGenerating = true
+        let postIds = Array(selectedPostIds)
+        
+        debugLog("🌟 Bulk generating replies for \(postIds.count) posts")
+        
+        apiClient.bulkGenerateReplies(postIds: postIds) { [weak self] result in
+            guard let self else { return }
+            self.isBulkGenerating = false
+            
+            switch result {
+            case .success(let response):
+                self.debugLog("✅ Bulk generate succeeded: \(response.successful)/\(response.total)")
+                
+                // Update post statuses to 'generated' for successful ones
+                let successfulIds = Set(response.results.filter { $0.success }.map { $0.postId })
+                self.posts = self.posts.map { post in
+                    if successfulIds.contains(post.id) {
+                        var updatedPost = post
+                        updatedPost.replyStatus = "generated"
+                        return updatedPost
+                    }
+                    return post
+                }
+                
+                // Clear selection
+                self.selectedPostIds.removeAll()
+                
+                // Show success message
+                self.successMessage = "✓ Generated \(response.successful) of \(response.total) replies! Check History to review."
+                self.showSuccessAlert = true
+                
+                // Refresh to get latest status
+                self.refresh()
+                
+            case .failure(let error):
+                self.debugLog("❌ Bulk generate failed: \(error)")
+                self.bulkErrorMessage = Self.readableMessage(from: error)
+                self.showErrorAlert = true
+            }
+        }
+    }
+    
+    func bulkLikePosts() {
+        guard !selectedPostIds.isEmpty, !isBulkLiking else { return }
+        
+        isBulkLiking = true
+        
+        // Extract tweet IDs from selected posts
+        let selectedPosts = posts.filter { selectedPostIds.contains($0.id) }
+        let tweetIds = selectedPosts.compactMap { post -> String? in
+            guard let urlString = post.url?.absoluteString else { return nil }
+            // Extract tweet ID from URL like https://x.com/username/status/1234567890
+            if let range = urlString.range(of: "/status/") {
+                let idString = String(urlString[range.upperBound...])
+                // Remove any query parameters
+                if let endIndex = idString.firstIndex(of: "?") {
+                    return String(idString[..<endIndex])
+                }
+                return idString
+            }
+            return nil
+        }
+        
+        debugLog("❤️ Bulk liking \(tweetIds.count) tweets")
+        
+        apiClient.bulkLikeTweets(tweetIds: tweetIds) { [weak self] result in
+            guard let self else { return }
+            self.isBulkLiking = false
+            
+            switch result {
+            case .success(let response):
+                self.debugLog("✅ Bulk like succeeded: \(response.successful)/\(response.total)")
+                
+                // Clear selection
+                self.selectedPostIds.removeAll()
+                
+                // Show success message
+                self.successMessage = "✓ Liked \(response.successful) of \(response.total) tweets!"
+                self.showSuccessAlert = true
+                
+            case .failure(let error):
+                self.debugLog("❌ Bulk like failed: \(error)")
+                self.bulkErrorMessage = Self.readableMessage(from: error)
+                self.showErrorAlert = true
+            }
+        }
     }
 }
 

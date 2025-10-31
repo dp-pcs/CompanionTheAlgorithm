@@ -320,6 +320,25 @@ struct TimelineFetchResponse: Codable {
     }
 }
 
+struct BulkOperationResponse: Codable {
+    let total: Int
+    let successful: Int
+    let failed: Int
+    let results: [BulkOperationResult]
+}
+
+struct BulkOperationResult: Codable {
+    let postId: String
+    let success: Bool
+    let message: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case postId = "post_id"
+        case success
+        case message
+    }
+}
+
 enum APIClientError: Error {
     case invalidURL
     case missingAuthToken
@@ -682,6 +701,95 @@ class APIClient {
         }
 
         return components.url
+    }
+    
+    // MARK: - Bulk Operations
+    
+    func bulkGenerateReplies(postIds: [String], completion: @escaping (Result<BulkOperationResponse, Error>) -> Void) {
+        let formData = ["post_ids": postIds.joined(separator: ",")]
+        performFormRequest(path: "/api/v1/replies/bulk-generate-and-queue", method: "POST", formData: formData, completion: completion)
+    }
+    
+    func bulkLikeTweets(tweetIds: [String], completion: @escaping (Result<BulkOperationResponse, Error>) -> Void) {
+        let formData = ["tweet_ids": tweetIds.joined(separator: ",")]
+        performFormRequest(path: "/api/v1/replies/twikit/like-tweets-bulk", method: "POST", formData: formData, completion: completion)
+    }
+    
+    private func performFormRequest<T: Decodable>(
+        path: String,
+        method: String = "GET",
+        formData: [String: String],
+        completion: @escaping (Result<T, Error>) -> Void
+    ) {
+        guard let url = buildURL(path: path) else {
+            completion(.failure(APIClientError.invalidURL))
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        
+        // Add OAuth token if available
+        if let token = authManager.getAccessToken() {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        
+        // Build form data
+        let boundary = "Boundary-\(UUID().uuidString)"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        
+        var body = Data()
+        for (key, value) in formData {
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"\(key)\"\r\n\r\n".data(using: .utf8)!)
+            body.append("\(value)\r\n".data(using: .utf8)!)
+        }
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        
+        request.httpBody = body
+
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+
+                guard let data = data else {
+                    completion(.failure(APIClientError.requestFailed("No data received")))
+                    return
+                }
+
+                if let httpResponse = response as? HTTPURLResponse {
+                    print("📡 Response status: \(httpResponse.statusCode) for \(path)")
+                    
+                    if httpResponse.statusCode >= 400 {
+                        if let errorString = String(data: data, encoding: .utf8) {
+                            print("❌ Error response: \(errorString)")
+                            completion(.failure(APIClientError.requestFailed("HTTP \(httpResponse.statusCode): \(errorString)")))
+                        } else {
+                            completion(.failure(APIClientError.requestFailed("HTTP \(httpResponse.statusCode)")))
+                        }
+                        return
+                    }
+                }
+
+                do {
+                    let decoder = JSONDecoder()
+                    decoder.keyDecodingStrategy = .convertFromSnakeCase
+                    let decoded = try decoder.decode(T.self, from: data)
+                    completion(.success(decoded))
+                } catch {
+                    print("❌ Decoding error: \(error)")
+                    if let jsonString = String(data: data, encoding: .utf8) {
+                        print("📄 Response JSON: \(jsonString)")
+                    }
+                    completion(.failure(APIClientError.decodingFailed(error)))
+                }
+            }
+        }
+
+        task.resume()
     }
 }
 
