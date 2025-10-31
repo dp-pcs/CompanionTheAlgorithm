@@ -289,9 +289,11 @@ final class BulkComposeViewModel: ObservableObject {
         }
     }
     
-    func stopPolling() {
-        pollingTimer?.invalidate()
-        pollingTimer = nil
+    nonisolated func stopPolling() {
+        Task { @MainActor in
+            pollingTimer?.invalidate()
+            pollingTimer = nil
+        }
     }
     
     // MARK: - Selection

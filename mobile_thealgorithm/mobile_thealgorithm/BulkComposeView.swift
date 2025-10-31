@@ -156,11 +156,11 @@ struct BulkComposeView: View {
                         PostCell(
                             post: post,
                             viewModel: viewModel,
+                            onDelete: { viewModel.deletePost(post) },
                             onSchedule: {
                                 postsToSchedule = [post.id]
                                 showSchedulingSheet = true
-                            },
-                            onDelete: { viewModel.deletePost(post) }
+                            }
                         )
                     }
                 } header: {
