@@ -849,7 +849,9 @@ class APIClient {
 
                 do {
                     let decoder = JSONDecoder()
-                    decoder.keyDecodingStrategy = .convertFromSnakeCase
+                    // NOTE: Do NOT use .convertFromSnakeCase here!
+                    // BulkOperationResult has custom CodingKeys that explicitly map post_id -> postId
+                    // Using both causes a conflict where keys get converted twice
                     let decoded = try decoder.decode(T.self, from: data)
                     
                     // Special debugging for BulkOperationResponse
