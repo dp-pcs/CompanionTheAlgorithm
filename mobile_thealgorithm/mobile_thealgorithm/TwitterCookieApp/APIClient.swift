@@ -343,11 +343,13 @@ struct BulkOperationResponse: Codable {
 
 struct BulkOperationResult: Codable {
     let postId: String
+    let replyId: String?  // ID of the generated reply (if successful)
     let success: Bool
     let message: String?
     
     enum CodingKeys: String, CodingKey {
         case postId = "post_id"
+        case replyId = "reply_id"
         case success
         case message
     }
@@ -829,7 +831,13 @@ class APIClient {
                         print("   Successful: \(bulkResponse.successful)")
                         print("   Failed: \(bulkResponse.failed)")
                         for (index, result) in bulkResponse.results.enumerated() {
-                            if !result.success {
+                            if result.success {
+                                if let replyId = result.replyId {
+                                    print("   ✅ Post \(index + 1) (\(result.postId)): Reply generated! ID: \(replyId)")
+                                } else {
+                                    print("   ✅ Post \(index + 1) (\(result.postId)): Success")
+                                }
+                            } else {
                                 print("   ❌ Post \(index + 1) (\(result.postId)): \(result.message ?? "unknown error")")
                             }
                         }
