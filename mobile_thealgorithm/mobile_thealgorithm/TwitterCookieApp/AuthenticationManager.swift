@@ -18,10 +18,20 @@ class AuthenticationManager: NSObject {
     private var oauthCompletion: ((Bool, Error?) -> Void)?
     private var twitterCompletion: (([HTTPCookie]?, Error?) -> Void)?
     private var presentingViewController: UIViewController?
+    private let twitterLoginURL = URL(string: "https://x.com/login")!
+    private let userAgentString = "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15"
     
     // PKCE (Proof Key for Code Exchange) properties
     private var codeVerifier: String?
     private var codeChallenge: String?
+    
+    // Universal Link handling
+    private var universalLinkConversions: [(url: String, timestamp: Date)] = []
+    private let universalLinkConversionWindow: TimeInterval = 1.0 // 1 second window
+    private let maxUniversalLinkConversions = 2 // Max conversions before blocking
+    private let maxRedirectUniversalLinkConversions = 4 // Higher threshold for redirect.x.com before blocking
+    private var redirectUniversalLinkHistory: [String: Date] = [:]
+    private let redirectUniversalLinkSuppressDuration: TimeInterval = 3.0
     
     // MARK: - Public Methods
     
@@ -69,6 +79,10 @@ class AuthenticationManager: NSObject {
         self.twitterCompletion = completion
         self.presentingViewController = viewController
         
+        // Reset Universal Link conversion tracking for fresh session
+        universalLinkConversions.removeAll()
+        redirectUniversalLinkHistory.removeAll()
+        
         print("🐦 Starting X.com authentication...")
         
         let webView = createTwitterWebView()
@@ -78,13 +92,8 @@ class AuthenticationManager: NSObject {
         viewController.present(navController, animated: true)
         
         // Load X.com login page
-        let loginURL = URL(string: "https://x.com/login")!
-        print("📍 Loading X.com URL: \(loginURL.absoluteString)")
-        
-        var request = URLRequest(url: loginURL)
-        request.setValue("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1", forHTTPHeaderField: "User-Agent")
-        
-        webView.load(request)
+        print("📍 Loading X.com URL: \(twitterLoginURL.absoluteString)")
+        loadTwitterLoginPage(in: webView)
         print("✅ WebView load initiated")
     }
     
@@ -152,16 +161,98 @@ class AuthenticationManager: NSObject {
     private func createTwitterWebView() -> WKWebView {
         let config = WKWebViewConfiguration()
         config.websiteDataStore = WKWebsiteDataStore.default() // Use default to allow cookies
-        
+
         // Enable JavaScript
         let preferences = WKWebpagePreferences()
         preferences.allowsContentJavaScript = true
         config.defaultWebpagePreferences = preferences
-        
+
+        let userContentController = WKUserContentController()
+        let blockUniversalLinkScript = """
+        (function() {
+            const blockedPrefixes = ["x-safari-https://redirect.x.com/"];
+            const shouldBlock = function(url) {
+                if (!url) {
+                    return false;
+                }
+                try {
+                    const href = (typeof url === 'string' ? url : (url.href || '')).toLowerCase();
+                    return blockedPrefixes.some(prefix => href.startsWith(prefix));
+                } catch (error) {
+                    return false;
+                }
+            };
+
+            const locationProto = window.Location && window.Location.prototype;
+            if (locationProto && !locationProto.__companionUniversalLinkPatched) {
+                const originalAssign = locationProto.assign;
+                const originalReplace = locationProto.replace;
+                const hrefDescriptor = Object.getOwnPropertyDescriptor(locationProto, 'href');
+
+                const wrapNavigation = fn => {
+                    if (!fn) {
+                        return undefined;
+                    }
+                    return function(url) {
+                        if (shouldBlock(url)) {
+                            return;
+                        }
+                        return fn.apply(this, arguments);
+                    };
+                };
+
+                if (originalAssign) {
+                    locationProto.assign = wrapNavigation(originalAssign);
+                }
+
+                if (originalReplace) {
+                    locationProto.replace = wrapNavigation(originalReplace);
+                }
+
+                if (hrefDescriptor && hrefDescriptor.set) {
+                    const originalSetter = hrefDescriptor.set;
+                    Object.defineProperty(locationProto, 'href', {
+                        configurable: hrefDescriptor.configurable,
+                        enumerable: hrefDescriptor.enumerable,
+                        get: hrefDescriptor.get,
+                        set: function(value) {
+                            if (shouldBlock(value)) {
+                                return value;
+                            }
+                            return originalSetter.call(this, value);
+                        }
+                    });
+                }
+
+                const originalOpen = window.open;
+                if (originalOpen) {
+                    window.open = function(url) {
+                        if (shouldBlock(url)) {
+                            return null;
+                        }
+                        return originalOpen.apply(this, arguments);
+                    };
+                }
+
+                Object.defineProperty(locationProto, '__companionUniversalLinkPatched', {
+                    value: true,
+                    configurable: false,
+                    enumerable: false,
+                    writable: false
+                });
+            }
+        })();
+        """
+
+        let universalLinkBlocker = WKUserScript(source: blockUniversalLinkScript, injectionTime: .atDocumentStart, forMainFrameOnly: false)
+        userContentController.addUserScript(universalLinkBlocker)
+        config.userContentController = userContentController
+
         let webView = WKWebView(frame: .zero, configuration: config)
+        webView.customUserAgent = userAgentString
         webView.navigationDelegate = self
         webView.allowsBackForwardNavigationGestures = true
-        
+
         print("🌐 Created WebView with configuration")
         return webView
     }
@@ -190,6 +281,13 @@ class AuthenticationManager: NSObject {
         )
         
         return viewController
+    }
+
+    private func loadTwitterLoginPage(in webView: WKWebView, url: URL? = nil) {
+        let targetURL = url ?? twitterLoginURL
+        var request = URLRequest(url: targetURL)
+        request.setValue(userAgentString, forHTTPHeaderField: "User-Agent")
+        webView.load(request)
     }
     
     @objc private func handleOAuthCallback(_ notification: Notification) {
@@ -371,23 +469,125 @@ extension AuthenticationManager: WKNavigationDelegate {
     }
     
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        print("❌ WebView provisional navigation failed: \(error.localizedDescription)")
+        let nsError = error as NSError
+        // Error code 102 is WKNavigationErrorFrameLoadInterrupted, which is expected when converting Universal Links
+        if nsError.domain == "WebKitErrorDomain" && nsError.code == 102 {
+            print("⚠️ Frame load interrupted (expected when converting Universal Links)")
+        } else {
+            print("❌ WebView provisional navigation failed: \(error.localizedDescription)")
+            if let url = webView.url {
+                print("   URL: \(url.absoluteString)")
+            }
+        }
     }
     
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
         print("🔄 WebView started loading: \(webView.url?.absoluteString ?? "unknown")")
     }
     
+    func webView(_ webView: WKWebView, didReceiveServerRedirectForProvisionalNavigation navigation: WKNavigation!) {
+        if let url = webView.url {
+            print("🔄 Server redirect detected: \(url.absoluteString)")
+        }
+    }
+    
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        guard let url = navigationAction.request.url else {
+            decisionHandler(.allow)
+            return
+        }
+        
+        let scheme = url.scheme ?? "unknown"
+        let navigationType = navigationAction.navigationType.rawValue
+        let isMainFrame = navigationAction.targetFrame?.isMainFrame ?? true
+        
+        print("🔍 Navigation policy check for: \(url.absoluteString)")
+        print("   Scheme: \(scheme)")
+        print("   Navigation type: \(navigationType)")
+        print("   Is main frame: \(isMainFrame)")
         
         // Handle OAuth redirect URLs
-        if let url = navigationAction.request.url,
-           url.scheme == "thealgorithm" {
+        if url.scheme == "thealgorithm" {
             decisionHandler(.cancel)
             handleOAuthCallback(Notification(name: .authCallbackReceived, object: url))
             return
         }
         
+        // Handle Universal Links (x-safari-https:// scheme)
+        if url.scheme == "x-safari-https" {
+            // Clean up old conversion records outside the time window
+            let now = Date()
+            universalLinkConversions = universalLinkConversions.filter {
+                now.timeIntervalSince($0.timestamp) < universalLinkConversionWindow
+            }
+
+            // Convert Universal Link to regular HTTPS URL
+            let httpsURLString = url.absoluteString.replacingOccurrences(of: "x-safari-https://", with: "https://")
+            let isRedirectDomain = url.host?.contains("redirect.x.com") == true
+
+            if isRedirectDomain {
+                redirectUniversalLinkHistory = redirectUniversalLinkHistory.filter {
+                    now.timeIntervalSince($0.value) < redirectUniversalLinkSuppressDuration
+                }
+
+                if let lastConversion = redirectUniversalLinkHistory[httpsURLString] {
+                    let delta = now.timeIntervalSince(lastConversion)
+                    print("⏹️ Ignoring repeated redirect.x.com Universal Link (converted \(String(format: "%.2f", delta))s ago)")
+                    print("   URL: \(url.absoluteString)")
+                    decisionHandler(.cancel)
+
+                    DispatchQueue.main.async { [weak self] in
+                        self?.loadTwitterLoginPage(in: webView)
+                    }
+                    return
+                }
+            }
+
+            let conversionLimit = isRedirectDomain ? maxRedirectUniversalLinkConversions : maxUniversalLinkConversions
+
+            // Count recent conversions of this specific URL
+            let recentConversions = universalLinkConversions.filter { $0.url == httpsURLString }
+
+            if recentConversions.count >= conversionLimit {
+                let timeSpan = recentConversions.isEmpty ? 0.0 : now.timeIntervalSince(recentConversions.first!.timestamp)
+                print("🛑 Blocking Universal Link - detected loop")
+                print("   URL: \(url.absoluteString)")
+                print("   Converted \(recentConversions.count) times in \(String(format: "%.2f", timeSpan))s")
+                decisionHandler(.cancel)
+                return
+            }
+
+            // Record this conversion
+            universalLinkConversions.append((url: httpsURLString, timestamp: now))
+            if isRedirectDomain {
+                redirectUniversalLinkHistory[httpsURLString] = now
+            }
+
+            // Convert and load the HTTPS URL
+            if let httpsURL = URL(string: httpsURLString) {
+                print("🔄 Converting Universal Link to HTTPS")
+                if isRedirectDomain {
+                    print("   Detected redirect.x.com Universal Link")
+                }
+                print("   From: \(url.absoluteString)")
+                print("   To: \(httpsURLString)")
+
+                decisionHandler(.cancel)
+
+                // Load the converted URL with proper headers
+                DispatchQueue.main.async { [weak self] in
+                    self?.loadTwitterLoginPage(in: webView, url: httpsURL)
+                }
+                return
+            }
+        }
+        
+        // Allow web navigation for HTTPS/HTTP schemes
+        if scheme == "https" || scheme == "http" {
+            print("✅ Allowing web navigation scheme: \(scheme)")
+        }
+        
+        // Allow all other navigation
         decisionHandler(.allow)
     }
     
@@ -413,13 +613,15 @@ extension AuthenticationManager: WKNavigationDelegate {
                        ["auth_token", "ct0", "auth_multi", "twid", "kdt", "remember_checked_on"].contains(cookie.name)
             }
             
-            DispatchQueue.main.async {
-                self?.presentingViewController?.dismiss(animated: true)
-                
-                if !twitterCookies.isEmpty {
-                    self?.twitterCompletion?(twitterCookies, nil)
-                } else {
-                    self?.twitterCompletion?(nil, NSError(domain: "AuthError", code: -9, userInfo: [NSLocalizedDescriptionKey: "No authentication cookies found"]))
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.presentingViewController?.dismiss(animated: true) { [weak self] in
+                    guard let self = self else { return }
+                    if !twitterCookies.isEmpty {
+                        self.twitterCompletion?(twitterCookies, nil)
+                    } else {
+                        self.twitterCompletion?(nil, NSError(domain: "AuthError", code: -9, userInfo: [NSLocalizedDescriptionKey: "No authentication cookies found"]))
+                    }
                 }
             }
         }

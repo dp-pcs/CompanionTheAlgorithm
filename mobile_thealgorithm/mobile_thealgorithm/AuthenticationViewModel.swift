@@ -17,7 +17,7 @@ class AuthenticationViewModel: ObservableObject {
     
     private let authManager = AuthenticationManager()
     private let cookieManager = CookieManager()
-    private let apiClient = APIClient()
+    let apiClient = APIClient()
     
     init() {
         // Check initial authentication state
@@ -186,7 +186,7 @@ class AuthenticationViewModel: ObservableObject {
     
     // MARK: - Clear Data
     
-    func clearAllData() {
+    func clearAllData(showConfirmation: Bool = true) {
         // Clear OAuth token
         KeychainHelper.delete(service: "TheAlgorithm", account: "oauth_token")
         
@@ -196,9 +196,21 @@ class AuthenticationViewModel: ObservableObject {
         // Update state
         updateAuthenticationState()
         
+        print("🧼 Cleared authentication data")
+
+        if showConfirmation {
+            showAlert(
+                title: "Data Cleared",
+                message: "All authentication data has been removed. You'll need to authenticate again."
+            )
+        }
+    }
+
+    func logoutAndReauthenticate() {
+        clearAllData(showConfirmation: false)
         showAlert(
-            title: "Data Cleared",
-            message: "All authentication data has been removed. You'll need to authenticate again."
+            title: "Signed Out",
+            message: "You're signed out. Start with OAuth again when you're ready."
         )
     }
     

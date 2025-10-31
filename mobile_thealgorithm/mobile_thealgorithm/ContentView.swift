@@ -9,11 +9,38 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var viewModel = AuthenticationViewModel()
+    @State private var showAuthenticationFlow = false
+    
+    var body: some View {
+        DashboardView(viewModel: viewModel) {
+            showAuthenticationFlow = true
+        }
+        .onAppear { updateAuthenticationPresentation() }
+        .onChange(of: viewModel.hasOAuthToken) { _ in updateAuthenticationPresentation() }
+        .onChange(of: viewModel.hasCookies) { _ in updateAuthenticationPresentation() }
+        .fullScreenCover(isPresented: $showAuthenticationFlow) {
+            AuthenticationFlowView(viewModel: viewModel) {
+                updateAuthenticationPresentation()
+            }
+            .interactiveDismissDisabled(!(viewModel.hasOAuthToken && viewModel.hasCookies))
+        }
+    }
+    
+    private func updateAuthenticationPresentation() {
+        let isAuthenticated = viewModel.hasOAuthToken && viewModel.hasCookies
+        showAuthenticationFlow = !isAuthenticated
+    }
+}
+
+// MARK: - Authentication Flow
+
+private struct AuthenticationFlowView: View {
+    @ObservedObject var viewModel: AuthenticationViewModel
+    let dismissAction: () -> Void
     
     var body: some View {
         NavigationView {
             ZStack {
-                // Background gradient
                 LinearGradient(
                     gradient: Gradient(colors: [
                         Color.blue.opacity(0.1),
@@ -26,7 +53,6 @@ struct ContentView: View {
                 
                 ScrollView {
                     VStack(spacing: 24) {
-                        // Header
                         VStack(spacing: 8) {
                             Image(systemName: "lock.shield.fill")
                                 .font(.system(size: 60))
@@ -42,12 +68,9 @@ struct ContentView: View {
                         }
                         .padding(.bottom, 20)
                         
-                        // Status Card
                         StatusCardView(viewModel: viewModel)
                         
-                        // Authentication Flow
                         VStack(spacing: 16) {
-                            // OAuth Authentication
                             AuthButton(
                                 title: "Authenticate with The Algorithm",
                                 subtitle: "Step 1: OAuth Authentication",
@@ -57,7 +80,6 @@ struct ContentView: View {
                                 action: { viewModel.authenticateWithOAuth() }
                             )
                             
-                            // X.com Authentication
                             AuthButton(
                                 title: "Authenticate with X.com",
                                 subtitle: "Step 2: Extract Session Cookies",
@@ -69,7 +91,6 @@ struct ContentView: View {
                         }
                         .padding(.horizontal)
                         
-                        // Message Section
                         if viewModel.hasOAuthToken && viewModel.hasCookies {
                             MessageSectionView(viewModel: viewModel)
                                 .transition(.opacity.combined(with: .move(edge: .bottom)))
@@ -89,6 +110,9 @@ struct ContentView: View {
                         
                         if viewModel.hasOAuthToken || viewModel.hasCookies {
                             Divider()
+                            Button(action: { viewModel.logoutAndReauthenticate() }) {
+                                Label("Log Out & Reauthenticate", systemImage: "arrow.uturn.left.circle")
+                            }
                             Button(role: .destructive, action: { viewModel.clearAllData() }) {
                                 Label("Clear All Data", systemImage: "trash")
                             }
@@ -110,7 +134,152 @@ struct ContentView: View {
                     LoadingOverlay(message: viewModel.loadingMessage)
                 }
             }
+            .onAppear { viewModel.updateAuthenticationState() }
+            .onChange(of: viewModel.hasOAuthToken && viewModel.hasCookies) { isReady in
+                if isReady {
+                    dismissAction()
+                }
+            }
         }
+    }
+}
+
+// MARK: - Dashboard
+
+private struct DashboardView: View {
+    @ObservedObject var viewModel: AuthenticationViewModel
+    let onRequestAuthenticationFlow: () -> Void
+    
+    var body: some View {
+        let isAuthenticated = viewModel.hasOAuthToken && viewModel.hasCookies
+        
+        TabView {
+            NavigationStack {
+                ScrollView {
+                    VStack(spacing: 24) {
+                        StatusCardView(viewModel: viewModel)
+                        AuthenticationChecklistView(viewModel: viewModel, onRequestAuthFlow: onRequestAuthenticationFlow)
+                        if viewModel.hasOAuthToken && viewModel.hasCookies {
+                            MessageSectionView(viewModel: viewModel)
+                        } else {
+                            AuthenticationHelpCard()
+                        }
+                    }
+                    .padding(.vertical)
+                }
+                .navigationTitle("Overview")
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Menu {
+                            Button(action: { viewModel.checkAPIHealth() }) {
+                                Label("Check API Health", systemImage: "heart.text.square")
+                            }
+                            Divider()
+                            Button(action: { viewModel.logoutAndReauthenticate() }) {
+                                Label("Log Out & Reauthenticate", systemImage: "arrow.uturn.left.circle")
+                            }
+                            Button(role: .destructive, action: { viewModel.clearAllData() }) {
+                                Label("Clear All Data", systemImage: "trash")
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
+                        }
+                    }
+                }
+            }
+            .tabItem { Label("Overview", systemImage: "house") }
+            
+            NavigationStack {
+                FeedView(apiClient: viewModel.apiClient, isAuthenticated: isAuthenticated)
+            }
+            .tabItem { Label("Feed", systemImage: "text.bubble") }
+            
+            NavigationStack {
+                PostingQueueView(apiClient: viewModel.apiClient, isAuthenticated: isAuthenticated)
+            }
+            .tabItem { Label("Queue", systemImage: "tray.full") }
+            
+            NavigationStack {
+                DraftsView(apiClient: viewModel.apiClient, isAuthenticated: isAuthenticated)
+            }
+            .tabItem { Label("Drafts", systemImage: "doc.text") }
+            
+            NavigationStack {
+                MonitoredUsersView(apiClient: viewModel.apiClient, isAuthenticated: isAuthenticated)
+            }
+            .tabItem { Label("Users", systemImage: "person.3") }
+            
+            NavigationStack {
+                SettingsStatusView(apiClient: viewModel.apiClient, isAuthenticated: isAuthenticated)
+            }
+            .tabItem { Label("Settings", systemImage: "gearshape") }
+        }
+    }
+}
+
+// MARK: - Dashboard Helper Views
+
+private struct AuthenticationChecklistView: View {
+    @ObservedObject var viewModel: AuthenticationViewModel
+    let onRequestAuthFlow: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Authentication Checklist")
+                .font(.headline)
+
+            Text("Complete both steps to unlock posting and data access.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+
+            AuthButton(
+                title: viewModel.hasOAuthToken ? "OAuth Connected" : "Authenticate with The Algorithm",
+                subtitle: "Step 1: OAuth Authentication",
+                systemImage: "key.fill",
+                isEnabled: !viewModel.hasOAuthToken,
+                isComplete: viewModel.hasOAuthToken,
+                action: { viewModel.authenticateWithOAuth() }
+            )
+
+            AuthButton(
+                title: viewModel.hasCookies ? "X.com Session Imported" : "Authenticate with X.com",
+                subtitle: "Step 2: Extract Session Cookies",
+                systemImage: "bird.fill",
+                isEnabled: viewModel.hasOAuthToken && !viewModel.hasCookies,
+                isComplete: viewModel.hasCookies,
+                action: { viewModel.authenticateWithTwitter() }
+            )
+
+            Button(action: onRequestAuthFlow) {
+                Label("Open Full Authentication Flow", systemImage: "rectangle.and.arrow.up.right")
+            }
+            .buttonStyle(.borderless)
+            .font(.footnote)
+            .foregroundColor(.blue)
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+        .padding(.horizontal)
+    }
+}
+
+private struct AuthenticationHelpCard: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Sign-in Required")
+                .font(.headline)
+            Text("Authenticate with both The Algorithm backend and X.com to enable feed, queue, drafts, and posting. Use the buttons above to start the flow.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 1)
+        .padding(.horizontal)
     }
 }
 
