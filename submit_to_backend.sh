@@ -42,12 +42,22 @@ echo ""
 
 # Create the issue
 echo "📝 Creating GitHub issue..."
+
+# Try with labels, but continue even if labels don't exist
 ISSUE_URL=$(gh issue create \
     --repo "$BACKEND_REPO" \
     --title "$ISSUE_TITLE" \
     --body-file "$ISSUE_FILE" \
-    --label "bug,high-priority,mobile-api" \
-    --assignee "@me")
+    --assignee "@me" 2>&1 || true)
+
+# Try to add labels separately (fails gracefully if labels don't exist)
+if [[ $ISSUE_URL =~ github.com/.*/([0-9]+) ]]; then
+    ISSUE_NUMBER="${BASH_REMATCH[1]}"
+    echo "   Attempting to add labels..."
+    gh issue edit "$ISSUE_NUMBER" --repo "$BACKEND_REPO" --add-label "bug" 2>/dev/null || echo "   ⚠️  'bug' label not found (skipping)"
+    gh issue edit "$ISSUE_NUMBER" --repo "$BACKEND_REPO" --add-label "mobile" 2>/dev/null || echo "   ⚠️  'mobile' label not found (skipping)"
+    gh issue edit "$ISSUE_NUMBER" --repo "$BACKEND_REPO" --add-label "priority:high" 2>/dev/null || echo "   ⚠️  'priority:high' label not found (skipping)"
+fi
 
 echo ""
 echo "✅ Issue created successfully!"
