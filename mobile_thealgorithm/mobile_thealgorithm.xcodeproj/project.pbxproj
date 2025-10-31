@@ -7,13 +7,13 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-        99C631542EB31014008442DF /* mobile_thealgorithm.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = mobile_thealgorithm.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		99C631542EB31014008442DF /* mobile_thealgorithm.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = mobile_thealgorithm.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-        99C631562EB31014008442DF /* mobile_thealgorithm */ = {
+		99C631562EB31014008442DF /* mobile_thealgorithm */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-            path = mobile_thealgorithm;
+			path = mobile_thealgorithm;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -32,7 +32,7 @@
 		99C6314B2EB31014008442DF = {
 			isa = PBXGroup;
 			children = (
-                99C631562EB31014008442DF /* mobile_thealgorithm */,
+				99C631562EB31014008442DF /* mobile_thealgorithm */,
 				99C631552EB31014008442DF /* Products */,
 			);
 			sourceTree = "<group>";
@@ -40,7 +40,7 @@
 		99C631552EB31014008442DF /* Products */ = {
 			isa = PBXGroup;
 			children = (
-                99C631542EB31014008442DF /* mobile_thealgorithm.app */,
+				99C631542EB31014008442DF /* mobile_thealgorithm.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,9 +48,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-        99C631532EB31014008442DF /* mobile_thealgorithm */ = {
+		99C631532EB31014008442DF /* mobile_thealgorithm */ = {
 			isa = PBXNativeTarget;
-            buildConfigurationList = 99C6315F2EB31015008442DF /* Build configuration list for PBXNativeTarget "mobile_thealgorithm" */;
+			buildConfigurationList = 99C6315F2EB31015008442DF /* Build configuration list for PBXNativeTarget "mobile_thealgorithm" */;
 			buildPhases = (
 				99C631502EB31014008442DF /* Sources */,
 				99C631512EB31014008442DF /* Frameworks */,
@@ -61,13 +61,13 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-                99C631562EB31014008442DF /* mobile_thealgorithm */,
+				99C631562EB31014008442DF /* mobile_thealgorithm */,
 			);
-            name = mobile_thealgorithm;
+			name = mobile_thealgorithm;
 			packageProductDependencies = (
 			);
-            productName = mobile_thealgorithm;
-            productReference = 99C631542EB31014008442DF /* mobile_thealgorithm.app */;
+			productName = mobile_thealgorithm;
+			productReference = 99C631542EB31014008442DF /* mobile_thealgorithm.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -85,7 +85,7 @@
 					};
 				};
 			};
-            buildConfigurationList = 99C6314F2EB31014008442DF /* Build configuration list for PBXProject "mobile_thealgorithm" */;
+			buildConfigurationList = 99C6314F2EB31014008442DF /* Build configuration list for PBXProject "mobile_thealgorithm" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -98,9 +98,9 @@
 			productRefGroup = 99C631552EB31014008442DF /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
-            targets = (
-                99C631532EB31014008442DF /* mobile_thealgorithm */,
-            );
+			targets = (
+				99C631532EB31014008442DF /* mobile_thealgorithm */,
+			);
 		};
 /* End PBXProject section */
 
@@ -256,7 +256,7 @@
 				DEVELOPMENT_TEAM = AGG992B2UB;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-                INFOPLIST_FILE = "mobile_thealgorithm-Info.plist";
+				INFOPLIST_FILE = "mobile_thealgorithm-Info.plist";
 				INFOPLIST_KEY_CFBundleURLTypes = "{\n    CFBundleTypeRole = Editor;\n    CFBundleURLName = \"proctorconsultingservices.The-Algorithm---Companion\";\n    CFBundleURLSchemes =     (\n        thealgorithm\n    );\n}";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -273,7 +273,7 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-                SWIFT_OBJC_BRIDGING_HEADER = "mobile_thealgorithm/mobile_thealgorithm-Bridging-Header.h";
+				SWIFT_OBJC_BRIDGING_HEADER = "mobile_thealgorithm/mobile_thealgorithm-Bridging-Header.h";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -290,7 +290,7 @@
 				DEVELOPMENT_TEAM = AGG992B2UB;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-                INFOPLIST_FILE = "mobile_thealgorithm-Info.plist";
+				INFOPLIST_FILE = "mobile_thealgorithm-Info.plist";
 				INFOPLIST_KEY_CFBundleURLTypes = "{\n    CFBundleTypeRole = Editor;\n    CFBundleURLName = \"proctorconsultingservices.The-Algorithm---Companion\";\n    CFBundleURLSchemes =     (\n        thealgorithm\n    );\n}";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -307,7 +307,7 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-                SWIFT_OBJC_BRIDGING_HEADER = "mobile_thealgorithm/mobile_thealgorithm-Bridging-Header.h";
+				SWIFT_OBJC_BRIDGING_HEADER = "mobile_thealgorithm/mobile_thealgorithm-Bridging-Header.h";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -317,7 +317,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-        99C6314F2EB31014008442DF /* Build configuration list for PBXProject "mobile_thealgorithm" */ = {
+		99C6314F2EB31014008442DF /* Build configuration list for PBXProject "mobile_thealgorithm" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				99C6315D2EB31015008442DF /* Debug */,
@@ -326,7 +326,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-        99C6315F2EB31015008442DF /* Build configuration list for PBXNativeTarget "mobile_thealgorithm" */ = {
+		99C6315F2EB31015008442DF /* Build configuration list for PBXNativeTarget "mobile_thealgorithm" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				99C631602EB31015008442DF /* Debug */,

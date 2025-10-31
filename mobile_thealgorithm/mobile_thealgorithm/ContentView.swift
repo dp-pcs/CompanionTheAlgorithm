@@ -155,6 +155,7 @@ private struct AuthenticationFlowView: View {
 private struct DashboardView: View {
     @ObservedObject var viewModel: AuthenticationViewModel
     let onRequestAuthenticationFlow: () -> Void
+    @State private var queueBadgeCount: Int = 0
     
     var body: some View {
         let isAuthenticated = viewModel.hasOAuthToken && viewModel.hasCookies
@@ -204,9 +205,10 @@ private struct DashboardView: View {
             .tabItem { Label("Feed", systemImage: "text.bubble") }
             
             NavigationStack {
-                PostingQueueView(apiClient: viewModel.apiClient, isAuthenticated: isAuthenticated)
+                ReplyQueueView(apiClient: viewModel.apiClient, isAuthenticated: isAuthenticated)
             }
             .tabItem { Label("Queue", systemImage: "tray.full") }
+            .badge(queueBadgeCount)
             
             NavigationStack {
                 DraftsView(apiClient: viewModel.apiClient, isAuthenticated: isAuthenticated)
@@ -222,6 +224,39 @@ private struct DashboardView: View {
                 SettingsStatusView(apiClient: viewModel.apiClient, isAuthenticated: isAuthenticated)
             }
             .tabItem { Label("Settings", systemImage: "gearshape") }
+        }
+        .task {
+            await fetchQueueCount()
+        }
+        .onChange(of: isAuthenticated) { newValue in
+            if newValue {
+                Task {
+                    await fetchQueueCount()
+                }
+            } else {
+                queueBadgeCount = 0
+            }
+        }
+    }
+    
+    @Sendable
+    private func fetchQueueCount() async {
+        guard viewModel.hasOAuthToken && viewModel.hasCookies else {
+            queueBadgeCount = 0
+            return
+        }
+        
+        viewModel.apiClient.fetchDraftReplies(status: "generated") { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let replies):
+                    queueBadgeCount = replies.count
+                    print("📊 Queue badge count updated: \(replies.count)")
+                case .failure(let error):
+                    print("⚠️ Failed to fetch queue count: \(error.localizedDescription)")
+                    queueBadgeCount = 0
+                }
+            }
         }
     }
 }
