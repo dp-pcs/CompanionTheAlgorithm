@@ -892,9 +892,10 @@ class APIClient {
     
     // MARK: - Bulk Compose Operations
     
-    func createBulkComposeSession(prompt: String, numPosts: Int = 10, completion: @escaping (Result<BulkComposeSession, Error>) -> Void) {
+    func createBulkComposeSession(prompt: String, topic: String = "general", numPosts: Int = 10, completion: @escaping (Result<BulkComposeSession, Error>) -> Void) {
         let body = [
             "prompt": prompt,
+            "topic": topic,
             "num_posts": numPosts
         ] as [String: Any]
         
