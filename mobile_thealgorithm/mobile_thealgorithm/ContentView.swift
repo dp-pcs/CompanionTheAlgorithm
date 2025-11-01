@@ -295,7 +295,7 @@ private struct AuthenticationChecklistView: View {
             )
 
             Button(action: onRequestAuthFlow) {
-                Label("Open Full Authentication Flow", systemImage: "rectangle.and.arrow.up.right")
+                Label("Open Full Authentication Flow", systemImage: "arrow.up.forward.square")
             }
             .buttonStyle(.borderless)
             .font(.footnote)

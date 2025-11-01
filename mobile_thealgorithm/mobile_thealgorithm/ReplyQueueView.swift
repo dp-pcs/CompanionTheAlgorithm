@@ -69,17 +69,33 @@ struct ReplyQueueView: View {
                 } else {
                     Menu {
                         Button(action: { viewModel.changeStatus(to: "generated") }) {
-                            Label("Generated", systemImage: viewModel.selectedStatus == "generated" ? "checkmark" : "")
+                            if viewModel.selectedStatus == "generated" {
+                                Label("Generated", systemImage: "checkmark")
+                            } else {
+                                Text("Generated")
+                            }
                         }
                         Button(action: { viewModel.changeStatus(to: "posted") }) {
-                            Label("Posted", systemImage: viewModel.selectedStatus == "posted" ? "checkmark" : "")
+                            if viewModel.selectedStatus == "posted" {
+                                Label("Posted", systemImage: "checkmark")
+                            } else {
+                                Text("Posted")
+                            }
                         }
                         Button(action: { viewModel.changeStatus(to: "failed") }) {
-                            Label("Failed", systemImage: viewModel.selectedStatus == "failed" ? "checkmark" : "")
+                            if viewModel.selectedStatus == "failed" {
+                                Label("Failed", systemImage: "checkmark")
+                            } else {
+                                Text("Failed")
+                            }
                         }
                         Divider()
                         Button(action: { viewModel.changeStatus(to: "all") }) {
-                            Label("All", systemImage: viewModel.selectedStatus == "all" ? "checkmark" : "")
+                            if viewModel.selectedStatus == "all" {
+                                Label("All", systemImage: "checkmark")
+                            } else {
+                                Text("All")
+                            }
                         }
                     } label: {
                         Image(systemName: "line.3.horizontal.decrease.circle")
