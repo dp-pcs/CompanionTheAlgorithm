@@ -608,12 +608,12 @@ class APIClient {
     }
 
     func fetchMonitoringStatus(completion: @escaping (Result<MonitoringStatus, Error>) -> Void) {
-        performRequest(path: "/api/v1/users/monitoring/status/", completion: completion)  // Trailing slash to avoid 307 redirect
+        performRequest(path: "/api/v1/users/monitoring/status", completion: completion)
     }
 
     func fetchTimeline(count: Int = 40, completion: @escaping (Result<TimelineFetchResponse, Error>) -> Void) {
         let items = [URLQueryItem(name: "count", value: String(count))]
-        performRequest(path: "/api/v1/posts/fetch-timeline/", method: "POST", queryItems: items, completion: completion)  // Trailing slash to avoid 307 redirect
+        performRequest(path: "/api/v1/posts/fetch-timeline", method: "POST", queryItems: items, completion: completion)
     }
 
     // MARK: Posting Queue
@@ -623,7 +623,7 @@ class APIClient {
         if let status {
             items.append(URLQueryItem(name: "status", value: status))
         }
-        performRequest(path: "/api/v1/posting-jobs/", queryItems: items, completion: completion)  // Trailing slash to avoid 307 redirect
+        performRequest(path: "/api/v1/posting-jobs", queryItems: items, completion: completion)
     }
 
     // MARK: Draft Replies
@@ -637,13 +637,13 @@ class APIClient {
 
     func fetchMonitoredUsers(limit: Int = 50, completion: @escaping (Result<[MonitoredUser], Error>) -> Void) {
         let items = [URLQueryItem(name: "limit", value: String(limit))]
-        performRequest(path: "/api/v1/users/me/monitored/", queryItems: items, completion: completion)  // Trailing slash to avoid 307 redirect
+        performRequest(path: "/api/v1/users/me/monitored", queryItems: items, completion: completion)
     }
 
     // MARK: Settings
 
     func fetchSettingsStatus(completion: @escaping (Result<SettingsStatus, Error>) -> Void) {
-        performRequest(path: "/api/v1/settings/status/", completion: completion)  // Trailing slash to avoid 307 redirect
+        performRequest(path: "/api/v1/settings/status", completion: completion)
     }
     
     func fetchAPIKeyStatus(completion: @escaping (Result<APIKeyStatus, Error>) -> Void) {
@@ -904,7 +904,7 @@ class APIClient {
             return
         }
         
-        performRequest(path: "/api/v1/bulk-compose/sessions/", method: "POST", body: jsonData, completion: completion)  // Trailing slash to avoid 307 redirect
+        performRequest(path: "/api/v1/bulk-compose/sessions", method: "POST", body: jsonData, completion: completion)
     }
     
     func fetchBulkComposePosts(sessionId: String, status: String? = nil, completion: @escaping (Result<[BulkComposePost], Error>) -> Void) {
@@ -912,16 +912,16 @@ class APIClient {
         if let status = status {
             items.append(URLQueryItem(name: "status", value: status))
         }
-        performRequest(path: "/api/v1/bulk-compose/sessions/\(sessionId)/posts/", queryItems: items, completion: completion)  // Trailing slash to avoid 307 redirect
+        performRequest(path: "/api/v1/bulk-compose/sessions/\(sessionId)/posts", queryItems: items, completion: completion)
     }
     
     func approvePost(postId: String, completion: @escaping (Result<BulkComposePost, Error>) -> Void) {
-        performRequest(path: "/api/v1/bulk-compose/posts/\(postId)/approve/", method: "POST", completion: completion)  // Trailing slash to avoid 307 redirect
+        performRequest(path: "/api/v1/bulk-compose/posts/\(postId)/approve", method: "POST", completion: completion)
     }
     
     func batchApprovePosts(postIds: [String], completion: @escaping (Result<BulkOperationResponse, Error>) -> Void) {
         let formData = ["post_ids": postIds.joined(separator: ",")]
-        performFormRequest(path: "/api/v1/bulk-compose/posts/batch-approve/", method: "POST", formData: formData, completion: completion)  // Trailing slash to avoid 307 redirect
+        performFormRequest(path: "/api/v1/bulk-compose/posts/batch-approve", method: "POST", formData: formData, completion: completion)
     }
     
     func updatePost(postId: String, text: String? = nil, status: String? = nil, scheduledFor: Date? = nil, completion: @escaping (Result<BulkComposePost, Error>) -> Void) {
@@ -942,11 +942,11 @@ class APIClient {
             return
         }
         
-        performRequest(path: "/api/v1/bulk-compose/posts/\(postId)/", method: "PUT", body: jsonData, completion: completion)  // Trailing slash to avoid 307 redirect
+        performRequest(path: "/api/v1/bulk-compose/posts/\(postId)", method: "PUT", body: jsonData, completion: completion)
     }
     
     func deletePost(postId: String, completion: @escaping (Result<Bool, Error>) -> Void) {
-        performRequest(path: "/api/v1/bulk-compose/posts/\(postId)/", method: "DELETE") { (result: Result<[String: String], Error>) in  // Trailing slash to avoid 307 redirect
+        performRequest(path: "/api/v1/bulk-compose/posts/\(postId)", method: "DELETE") { (result: Result<[String: String], Error>) in
             switch result {
             case .success:
                 completion(.success(true))
@@ -977,7 +977,7 @@ class APIClient {
             return
         }
         
-        performRequest(path: "/api/v1/bulk-compose/posts/publish/", method: "POST", body: jsonData, completion: completion)  // Trailing slash to avoid 307 redirect
+        performRequest(path: "/api/v1/bulk-compose/posts/publish", method: "POST", body: jsonData, completion: completion)
     }
     
     func schedulePostsRandomly(postIds: [String], timeWindowHours: Int, minIntervalMinutes: Int, maxIntervalMinutes: Int, startTime: Date? = nil, completion: @escaping (Result<RandomScheduleResponse, Error>) -> Void) {
@@ -998,11 +998,11 @@ class APIClient {
             return
         }
         
-        performRequest(path: "/api/v1/bulk-compose/posts/schedule-random/", method: "POST", body: jsonData, completion: completion)  // Trailing slash to avoid 307 redirect
+        performRequest(path: "/api/v1/bulk-compose/posts/schedule-random", method: "POST", body: jsonData, completion: completion)
     }
     
     func fetchPublishingStatus(sessionId: String, completion: @escaping (Result<PublishingStatus, Error>) -> Void) {
-        performRequest(path: "/api/v1/bulk-compose/sessions/\(sessionId)/publishing-status/", completion: completion)  // Trailing slash to avoid 307 redirect
+        performRequest(path: "/api/v1/bulk-compose/sessions/\(sessionId)/publishing-status", completion: completion)
     }
     
     private func performFormRequest<T: Decodable>(
