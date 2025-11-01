@@ -608,12 +608,12 @@ class APIClient {
     }
 
     func fetchMonitoringStatus(completion: @escaping (Result<MonitoringStatus, Error>) -> Void) {
-        performRequest(path: "/api/v1/users/monitoring/status", completion: completion)
+        performRequest(path: "/api/v1/users/monitoring/status/", completion: completion)  // Trailing slash to avoid 307 redirect
     }
 
     func fetchTimeline(count: Int = 40, completion: @escaping (Result<TimelineFetchResponse, Error>) -> Void) {
         let items = [URLQueryItem(name: "count", value: String(count))]
-        performRequest(path: "/api/v1/posts/fetch-timeline", method: "POST", queryItems: items, completion: completion)
+        performRequest(path: "/api/v1/posts/fetch-timeline/", method: "POST", queryItems: items, completion: completion)  // Trailing slash to avoid 307 redirect
     }
 
     // MARK: Posting Queue
@@ -623,27 +623,27 @@ class APIClient {
         if let status {
             items.append(URLQueryItem(name: "status", value: status))
         }
-        performRequest(path: "/api/v1/posting-jobs", queryItems: items, completion: completion)
+        performRequest(path: "/api/v1/posting-jobs/", queryItems: items, completion: completion)  // Trailing slash to avoid 307 redirect
     }
 
     // MARK: Draft Replies
 
     func fetchDraftReplies(status: String = "generated", completion: @escaping (Result<[DraftReply], Error>) -> Void) {
         let items = [URLQueryItem(name: "status", value: status)]
-        performRequest(path: "/api/v1/replies", queryItems: items, completion: completion)
+        performRequest(path: "/api/v1/replies/", queryItems: items, completion: completion)  // Trailing slash to avoid 307 redirect
     }
 
     // MARK: User Management
 
     func fetchMonitoredUsers(limit: Int = 50, completion: @escaping (Result<[MonitoredUser], Error>) -> Void) {
         let items = [URLQueryItem(name: "limit", value: String(limit))]
-        performRequest(path: "/api/v1/users/me/monitored", queryItems: items, completion: completion)
+        performRequest(path: "/api/v1/users/me/monitored/", queryItems: items, completion: completion)  // Trailing slash to avoid 307 redirect
     }
 
     // MARK: Settings
 
     func fetchSettingsStatus(completion: @escaping (Result<SettingsStatus, Error>) -> Void) {
-        performRequest(path: "/api/v1/settings/status", completion: completion)
+        performRequest(path: "/api/v1/settings/status/", completion: completion)  // Trailing slash to avoid 307 redirect
     }
     
     func fetchAPIKeyStatus(completion: @escaping (Result<APIKeyStatus, Error>) -> Void) {
@@ -904,7 +904,7 @@ class APIClient {
             return
         }
         
-        performRequest(path: "/api/v1/bulk-compose/sessions", method: "POST", body: jsonData, completion: completion)
+        performRequest(path: "/api/v1/bulk-compose/sessions/", method: "POST", body: jsonData, completion: completion)  // Trailing slash to avoid 307 redirect
     }
     
     func fetchBulkComposePosts(sessionId: String, status: String? = nil, completion: @escaping (Result<[BulkComposePost], Error>) -> Void) {
@@ -977,7 +977,7 @@ class APIClient {
             return
         }
         
-        performRequest(path: "/api/v1/bulk-compose/posts/publish", method: "POST", body: jsonData, completion: completion)
+        performRequest(path: "/api/v1/bulk-compose/posts/publish/", method: "POST", body: jsonData, completion: completion)  // Trailing slash to avoid 307 redirect
     }
     
     func schedulePostsRandomly(postIds: [String], timeWindowHours: Int, minIntervalMinutes: Int, maxIntervalMinutes: Int, startTime: Date? = nil, completion: @escaping (Result<RandomScheduleResponse, Error>) -> Void) {
@@ -998,7 +998,7 @@ class APIClient {
             return
         }
         
-        performRequest(path: "/api/v1/bulk-compose/posts/schedule-random", method: "POST", body: jsonData, completion: completion)
+        performRequest(path: "/api/v1/bulk-compose/posts/schedule-random/", method: "POST", body: jsonData, completion: completion)  // Trailing slash to avoid 307 redirect
     }
     
     func fetchPublishingStatus(sessionId: String, completion: @escaping (Result<PublishingStatus, Error>) -> Void) {
