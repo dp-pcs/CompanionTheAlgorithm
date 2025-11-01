@@ -330,13 +330,15 @@ private struct PostCell: View {
             HStack(spacing: 16) {
                 if let score = post.engagementScore {
                     Label(String(format: "%.1f", score), systemImage: "chart.bar.fill")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                }
+                
+                if let createdAt = post.createdAt {
+                    Text(createdAt, style: .relative)
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
-                
-                Text(post.createdAt, style: .relative)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
                 
                 if let postUrl = post.postUrl, let url = URL(string: postUrl) {
                     Link("View Post", destination: url)
