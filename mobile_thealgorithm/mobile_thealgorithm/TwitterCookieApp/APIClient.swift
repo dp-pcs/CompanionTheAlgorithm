@@ -274,15 +274,15 @@ struct BulkComposePost: Codable, Identifiable {
 
 struct BulkComposeSession: Codable, Identifiable {
     let id: String
-    let userId: String
-    let prompt: String
+    let userId: String?
+    let prompt: String?
     let postsGenerated: Int
-    let status: String  // generating, completed, failed
-    let createdAt: Date
-    let updatedAt: Date
+    let status: String?  // generating, completed, failed
+    let createdAt: Date?
+    let updatedAt: Date?
     
     enum CodingKeys: String, CodingKey {
-        case id
+        case id = "session_id"  // Backend sends "session_id"
         case userId = "user_id"
         case prompt
         case postsGenerated = "posts_generated"
