@@ -9,7 +9,7 @@ final class ReplyQueueViewModel: ObservableObject {
     @Published var errorMessage: String?
     
     // Filter states
-    @Published var selectedStatus: String = "generated"
+    @Published var selectedStatus: String = "queued"  // Default to "queued" since bulk-generated replies start as queued
     
     private let apiClient: APIClient
     

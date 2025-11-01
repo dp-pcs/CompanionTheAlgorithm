@@ -76,6 +76,20 @@ struct ReplyQueueView: View {
                                 Text("Generated")
                             }
                         }
+                        Button(action: { viewModel.changeStatus(to: "queued") }) {
+                            if viewModel.selectedStatus == "queued" {
+                                Label("Queued", systemImage: "checkmark")
+                            } else {
+                                Text("Queued")
+                            }
+                        }
+                        Button(action: { viewModel.changeStatus(to: "scheduled") }) {
+                            if viewModel.selectedStatus == "scheduled" {
+                                Label("Scheduled", systemImage: "checkmark")
+                            } else {
+                                Text("Scheduled")
+                            }
+                        }
                         Button(action: { viewModel.changeStatus(to: "posted") }) {
                             if viewModel.selectedStatus == "posted" {
                                 Label("Posted", systemImage: "checkmark")

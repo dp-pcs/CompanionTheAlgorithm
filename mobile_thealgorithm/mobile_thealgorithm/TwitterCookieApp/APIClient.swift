@@ -243,15 +243,15 @@ struct MonitoredUser: Codable, Identifiable {
 struct BulkComposePost: Codable, Identifiable {
     let id: String
     let sessionId: String
-    let userId: String
+    let userId: String?  // Optional - backend doesn't always return this
     var text: String
     var status: String  // draft, approved, scheduled, posted, rejected, failed
-    let orderIndex: Int
+    let orderIndex: Int?  // Optional - backend doesn't always return this
     var scheduledFor: Date?
     let postedAt: Date?
     let postUrl: String?
-    let createdAt: Date
-    let updatedAt: Date
+    let createdAt: Date?  // Optional - may be missing in some responses
+    let updatedAt: Date?  // Optional - may be missing in some responses
     let userRating: Int?
     let engagementScore: Double?
     
