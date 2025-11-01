@@ -24,35 +24,50 @@ final class ReplyQueueViewModel: ObservableObject {
     
     init(apiClient: APIClient) {
         self.apiClient = apiClient
+        print("🎯 [ReplyQueue] ViewModel initialized")
     }
     
     func load(status: String? = nil) {
-        guard !isLoading else { return }
+        let statusFilter = status ?? selectedStatus
+        print("🎯 [ReplyQueue] load() called with status: \(statusFilter)")
+        
+        guard !isLoading else {
+            print("🎯 [ReplyQueue] Already loading, skipping")
+            return
+        }
+        
         isLoading = true
         errorMessage = nil
         
-        let statusFilter = status ?? selectedStatus
+        print("🎯 [ReplyQueue] Starting API call to fetch replies (status=\(statusFilter))")
         
         apiClient.fetchDraftReplies(status: statusFilter) { [weak self] result in
-            guard let self else { return }
+            guard let self else {
+                print("🎯 [ReplyQueue] ❌ self was deallocated before completion")
+                return
+            }
+            
+            print("🎯 [ReplyQueue] API call completed")
             self.isLoading = false
             
             switch result {
             case .success(let fetchedReplies):
                 self.replies = fetchedReplies
-                print("✅ Loaded \(fetchedReplies.count) replies with status: \(statusFilter)")
+                print("🎯 [ReplyQueue] ✅ Loaded \(fetchedReplies.count) replies with status: \(statusFilter)")
             case .failure(let error):
-                print("❌ Failed to load replies: \(error)")
+                print("🎯 [ReplyQueue] ❌ Failed to load replies: \(error)")
                 self.errorMessage = Self.readableMessage(from: error)
             }
         }
     }
     
     func refresh(status: String? = nil) {
+        print("🎯 [ReplyQueue] refresh() called with status: \(status ?? "nil")")
         load(status: status)
     }
     
     func changeStatus(to status: String) {
+        print("🎯 [ReplyQueue] changeStatus() called, changing to: \(status)")
         selectedStatus = status
         load(status: status)
     }

@@ -7,6 +7,7 @@ struct ReplyQueueView: View {
     init(apiClient: APIClient, isAuthenticated: Bool) {
         _viewModel = StateObject(wrappedValue: ReplyQueueViewModel(apiClient: apiClient))
         self.isAuthenticated = isAuthenticated
+        print("🎯 [ReplyQueue] View initialized (isAuthenticated: \(isAuthenticated))")
     }
     
     var body: some View {
@@ -112,9 +113,16 @@ struct ReplyQueueView: View {
     
     @Sendable
     private func loadOnceIfNeeded() async {
-        guard isAuthenticated else { return }
+        print("🎯 [ReplyQueue] loadOnceIfNeeded() called (isAuthenticated: \(isAuthenticated), repliesCount: \(viewModel.replies.count))")
+        guard isAuthenticated else {
+            print("🎯 [ReplyQueue] Not authenticated, skipping load")
+            return
+        }
         if viewModel.replies.isEmpty {
+            print("🎯 [ReplyQueue] Replies are empty, calling viewModel.load()")
             viewModel.load()
+        } else {
+            print("🎯 [ReplyQueue] Replies already loaded (\(viewModel.replies.count)), skipping load")
         }
     }
 }
