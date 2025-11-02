@@ -7,6 +7,8 @@ final class ReplyQueueViewModel: ObservableObject {
     @Published var replies: [DraftReply] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var showSuccessMessage = false
+    @Published var successMessage: String = ""
     
     // Filter states
     @Published var selectedStatus: String = "queued"  // Default to "queued" since bulk-generated replies start as queued
@@ -74,9 +76,15 @@ final class ReplyQueueViewModel: ObservableObject {
     
     func sendReplyNow(_ reply: DraftReply) {
         print("📤 [ReplyQueue] Sending reply now: \(reply.id)")
+        
+        guard let replyText = reply.replyText, !replyText.isEmpty else {
+            errorMessage = "Reply has no text to send"
+            return
+        }
+        
         isLoading = true
         
-        apiClient.postReply(replyId: reply.id) { [weak self] result in
+        apiClient.postReply(replyId: reply.id, text: replyText) { [weak self] result in
             guard let self else { return }
             self.isLoading = false
             
@@ -85,6 +93,8 @@ final class ReplyQueueViewModel: ObservableObject {
                 print("✅ [ReplyQueue] Reply posted successfully!")
                 // Remove from local list and refresh
                 self.replies.removeAll { $0.id == reply.id }
+                self.successMessage = "Reply sent to Twitter! 🎉"
+                self.showSuccessMessage = true
                 self.refresh()
             case .failure(let error):
                 print("❌ [ReplyQueue] Failed to post reply: \(error)")
@@ -112,6 +122,8 @@ final class ReplyQueueViewModel: ObservableObject {
                 print("✅ [ReplyQueue] Reply scheduled successfully!")
                 // Remove from current list and refresh
                 self.replies.removeAll { $0.id == reply.id }
+                self.successMessage = "Reply scheduled! 📅"
+                self.showSuccessMessage = true
                 self.refresh()
             case .failure(let error):
                 print("❌ [ReplyQueue] Failed to schedule reply: \(error)")
@@ -136,6 +148,121 @@ final class ReplyQueueViewModel: ObservableObject {
                 print("❌ [ReplyQueue] Failed to delete reply: \(error)")
                 self.errorMessage = "Failed to delete reply: \(error.localizedDescription)"
             }
+        }
+    }
+    
+    // MARK: - Batch Operations
+    
+    func sendRepliesBatch(_ replies: [DraftReply]) {
+        print("📤 [ReplyQueue] Batch sending \(replies.count) replies")
+        isLoading = true
+        
+        let group = DispatchGroup()
+        var successCount = 0
+        var failCount = 0
+        
+        for reply in replies {
+            guard let replyText = reply.replyText, !replyText.isEmpty else {
+                failCount += 1
+                continue
+            }
+            
+            group.enter()
+            apiClient.postReply(replyId: reply.id, text: replyText) { [weak self] result in
+                switch result {
+                case .success:
+                    successCount += 1
+                    self?.replies.removeAll { $0.id == reply.id }
+                case .failure:
+                    failCount += 1
+                }
+                group.leave()
+            }
+        }
+        
+        group.notify(queue: .main) { [weak self] in
+            self?.isLoading = false
+            if successCount > 0 {
+                self?.successMessage = "✅ Sent \(successCount) replies to Twitter!"
+                self?.showSuccessMessage = true
+            }
+            if failCount > 0 {
+                self?.errorMessage = "Sent \(successCount) replies, \(failCount) failed"
+            }
+            print("✅ [ReplyQueue] Batch send complete: \(successCount) success, \(failCount) failed")
+            self?.refresh()
+        }
+    }
+    
+    func scheduleRepliesBatch(_ replies: [DraftReply]) {
+        print("📅 [ReplyQueue] Batch scheduling \(replies.count) replies")
+        isLoading = true
+        
+        let group = DispatchGroup()
+        var successCount = 0
+        var failCount = 0
+        
+        for reply in replies {
+            group.enter()
+            apiClient.scheduleReplyRandom(
+                replyId: reply.id,
+                timeWindowHours: 24,
+                minIntervalMinutes: 30,
+                maxIntervalMinutes: 120
+            ) { [weak self] result in
+                switch result {
+                case .success:
+                    successCount += 1
+                    self?.replies.removeAll { $0.id == reply.id }
+                case .failure:
+                    failCount += 1
+                }
+                group.leave()
+            }
+        }
+        
+        group.notify(queue: .main) { [weak self] in
+            self?.isLoading = false
+            if successCount > 0 {
+                self?.successMessage = "✅ Scheduled \(successCount) replies!"
+                self?.showSuccessMessage = true
+            }
+            if failCount > 0 {
+                self?.errorMessage = "Scheduled \(successCount) replies, \(failCount) failed"
+            }
+            print("✅ [ReplyQueue] Batch schedule complete: \(successCount) success, \(failCount) failed")
+            self?.refresh()
+        }
+    }
+    
+    func deleteRepliesBatch(_ replies: [DraftReply]) {
+        print("🗑️ [ReplyQueue] Batch deleting \(replies.count) replies")
+        isLoading = true
+        
+        let group = DispatchGroup()
+        var successCount = 0
+        var failCount = 0
+        
+        for reply in replies {
+            group.enter()
+            apiClient.deleteReply(replyId: reply.id) { [weak self] result in
+                switch result {
+                case .success:
+                    successCount += 1
+                    self?.replies.removeAll { $0.id == reply.id }
+                case .failure:
+                    failCount += 1
+                }
+                group.leave()
+            }
+        }
+        
+        group.notify(queue: .main) { [weak self] in
+            self?.isLoading = false
+            if failCount > 0 {
+                self?.errorMessage = "Deleted \(successCount) replies, \(failCount) failed"
+            }
+            print("✅ [ReplyQueue] Batch delete complete: \(successCount) success, \(failCount) failed")
         }
     }
     

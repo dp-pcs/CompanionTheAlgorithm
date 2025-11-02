@@ -4,6 +4,11 @@ struct ReplyQueueView: View {
     @StateObject private var viewModel: ReplyQueueViewModel
     let isAuthenticated: Bool
     
+    @State private var isSelecting = false
+    @State private var selectedReplyIds: Set<String> = []
+    @AppStorage("hasSeenSwipeHint") private var hasSeenSwipeHint = false
+    @State private var showSwipeHint = false
+    
     init(apiClient: APIClient, isAuthenticated: Bool) {
         _viewModel = StateObject(wrappedValue: ReplyQueueViewModel(apiClient: apiClient))
         self.isAuthenticated = isAuthenticated
@@ -31,6 +36,41 @@ struct ReplyQueueView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List {
+                    // Swipe Hint Banner
+                    if showSwipeHint && !hasSeenSwipeHint {
+                        Section {
+                            HStack(spacing: 12) {
+                                Image(systemName: "hand.draw")
+                                    .font(.title2)
+                                    .foregroundColor(.blue)
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("💡 Quick Actions")
+                                        .font(.headline)
+                                    Text("Swipe left to Send or Schedule • Swipe right to Delete")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    Text("Or tap 'Select' to manage multiple replies at once")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                Spacer()
+                                
+                                Button(action: {
+                                    showSwipeHint = false
+                                    hasSeenSwipeHint = true
+                                }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundColor(.secondary)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .padding(.vertical, 8)
+                        }
+                        .listRowBackground(Color.blue.opacity(0.1))
+                    }
+                    
                     Section {
                         HStack {
                             Label("Queued Replies", systemImage: "clock")
@@ -52,15 +92,35 @@ struct ReplyQueueView: View {
                     
                     Section {
                         ForEach(viewModel.replies) { reply in
-                            ReplyCell(reply: reply)
-                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            HStack(spacing: 12) {
+                                if isSelecting {
+                                    Button(action: { toggleSelection(reply.id) }) {
+                                        Image(systemName: selectedReplyIds.contains(reply.id) ? "checkmark.circle.fill" : "circle")
+                                            .foregroundColor(selectedReplyIds.contains(reply.id) ? .blue : .gray)
+                                            .font(.title3)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                                
+                                ReplyCell(reply: reply)
+                            }
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                if isSelecting {
+                                    toggleSelection(reply.id)
+                                }
+                            }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                if !isSelecting {
                                     Button(role: .destructive) {
                                         viewModel.deleteReply(reply)
                                     } label: {
                                         Label("Delete", systemImage: "trash")
                                     }
                                 }
-                                .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                            }
+                            .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                                if !isSelecting {
                                     if reply.status.lowercased() == "queued" {
                                         Button {
                                             viewModel.sendReplyNow(reply)
@@ -79,9 +139,59 @@ struct ReplyQueueView: View {
                                         .tint(.orange)
                                     }
                                 }
+                            }
                         }
                     } header: {
                         Text("Replies")
+                    }
+                    
+                    // Batch Actions Section (only show when selecting)
+                    if isSelecting && !selectedReplyIds.isEmpty {
+                        Section {
+                            VStack(spacing: 12) {
+                                Button(action: sendSelectedNow) {
+                                    HStack {
+                                        Image(systemName: "paperplane.fill")
+                                        Text("Send \(selectedReplyIds.count) Selected Now")
+                                            .fontWeight(.semibold)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.blue.opacity(0.15))
+                                    .foregroundColor(.blue)
+                                    .cornerRadius(8)
+                                }
+                                .buttonStyle(.plain)
+                                
+                                Button(action: scheduleSelected) {
+                                    HStack {
+                                        Image(systemName: "calendar")
+                                        Text("Schedule \(selectedReplyIds.count) Selected")
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.orange.opacity(0.15))
+                                    .foregroundColor(.orange)
+                                    .cornerRadius(8)
+                                }
+                                .buttonStyle(.plain)
+                                
+                                Button(role: .destructive, action: deleteSelected) {
+                                    HStack {
+                                        Image(systemName: "trash")
+                                        Text("Delete \(selectedReplyIds.count) Selected")
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.red.opacity(0.15))
+                                    .foregroundColor(.red)
+                                    .cornerRadius(8)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .listRowInsets(EdgeInsets())
+                            .padding(.top, 8)
+                        }
                     }
                 }
                 .listStyle(.insetGrouped)
@@ -90,6 +200,17 @@ struct ReplyQueueView: View {
         }
         .navigationTitle("Reply Queue")
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                if !viewModel.replies.isEmpty {
+                    Button(isSelecting ? "Done" : "Select") {
+                        isSelecting.toggle()
+                        if !isSelecting {
+                            selectedReplyIds.removeAll()
+                        }
+                    }
+                }
+            }
+            
             ToolbarItem(placement: .navigationBarTrailing) {
                 if viewModel.isLoading {
                     ProgressView()
@@ -149,6 +270,19 @@ struct ReplyQueueView: View {
             guard newValue else { return }
             viewModel.refresh()
         }
+        .onChange(of: viewModel.replies) { replies in
+            // Show hint when replies first load
+            if !replies.isEmpty && !hasSeenSwipeHint && !showSwipeHint {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    showSwipeHint = true
+                }
+            }
+        }
+        .alert("Success", isPresented: $viewModel.showSuccessMessage) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(viewModel.successMessage)
+        }
     }
     
     @Sendable
@@ -164,6 +298,36 @@ struct ReplyQueueView: View {
         } else {
             print("🎯 [ReplyQueue] Replies already loaded (\(viewModel.replies.count)), skipping load")
         }
+    }
+    
+    // MARK: - Multi-Select Actions
+    
+    private func toggleSelection(_ replyId: String) {
+        if selectedReplyIds.contains(replyId) {
+            selectedReplyIds.remove(replyId)
+        } else {
+            selectedReplyIds.insert(replyId)
+        }
+    }
+    
+    private func sendSelectedNow() {
+        let replies = viewModel.replies.filter { selectedReplyIds.contains($0.id) }
+        viewModel.sendRepliesBatch(replies)
+        isSelecting = false
+        selectedReplyIds.removeAll()
+    }
+    
+    private func scheduleSelected() {
+        let replies = viewModel.replies.filter { selectedReplyIds.contains($0.id) }
+        viewModel.scheduleRepliesBatch(replies)
+        isSelecting = false
+        selectedReplyIds.removeAll()
+    }
+    
+    private func deleteSelected() {
+        let replies = viewModel.replies.filter { selectedReplyIds.contains($0.id) }
+        viewModel.deleteRepliesBatch(replies)
+        selectedReplyIds.removeAll()
     }
 }
 

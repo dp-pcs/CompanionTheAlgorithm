@@ -633,9 +633,13 @@ class APIClient {
         performRequest(path: "/api/v1/replies/", queryItems: items, completion: completion)  // Trailing slash to avoid 307 redirect
     }
     
-    func postReply(replyId: String, completion: @escaping (Result<[String: String], Error>) -> Void) {
+    func postReply(replyId: String, text: String, completion: @escaping (Result<[String: String], Error>) -> Void) {
         // POST /api/v1/replies/post - Send reply immediately
-        let body: [String: Any] = ["reply_id": replyId]
+        // Backend requires both reply_id and text
+        let body: [String: Any] = [
+            "reply_id": replyId,
+            "text": text
+        ]
         guard let jsonData = try? JSONSerialization.data(withJSONObject: body) else {
             completion(.failure(APIClientError.requestFailed("Failed to encode request")))
             return
