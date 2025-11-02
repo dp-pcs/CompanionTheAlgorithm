@@ -18,22 +18,11 @@ struct ReplyQueueView: View {
     var body: some View {
         Group {
             if viewModel.isLoading && viewModel.replies.isEmpty {
-                ProgressView("Loading queue…")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                loadingView
             } else if let message = viewModel.errorMessage, viewModel.replies.isEmpty {
-                ContentUnavailableView(
-                    "No Replies",
-                    systemImage: "bubble.right",
-                    description: Text(message)
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                errorView(message: message)
             } else if viewModel.replies.isEmpty {
-                ContentUnavailableView(
-                    "No Replies in Queue",
-                    systemImage: "tray",
-                    description: Text("Generate replies from your feed to see them here")
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                emptyView
             } else {
                 List {
                     // Swipe Hint Banner
@@ -283,6 +272,31 @@ struct ReplyQueueView: View {
         } message: {
             Text(viewModel.successMessage)
         }
+    }
+    
+    // MARK: - Subviews
+    
+    private var loadingView: some View {
+        ProgressView("Loading queue…")
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
+    private func errorView(message: String) -> some View {
+        ContentUnavailableView(
+            "No Replies",
+            systemImage: "bubble.right",
+            description: Text(message)
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
+    private var emptyView: some View {
+        ContentUnavailableView(
+            "No Replies in Queue",
+            systemImage: "tray",
+            description: Text("Generate replies from your feed to see them here")
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
     @Sendable
