@@ -176,8 +176,8 @@ struct PostingJobListResponse: Codable {
     let limit: Int
 }
 
-struct DraftReply: Codable, Identifiable {
-    struct OriginalPost: Codable {
+struct DraftReply: Codable, Identifiable, Equatable {
+    struct OriginalPost: Codable, Equatable {
         let id: String
         let text: String
         let username: String
