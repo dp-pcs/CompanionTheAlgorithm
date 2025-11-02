@@ -53,6 +53,32 @@ struct ReplyQueueView: View {
                     Section {
                         ForEach(viewModel.replies) { reply in
                             ReplyCell(reply: reply)
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    Button(role: .destructive) {
+                                        viewModel.deleteReply(reply)
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
+                                .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                                    if reply.status.lowercased() == "queued" {
+                                        Button {
+                                            viewModel.sendReplyNow(reply)
+                                        } label: {
+                                            Label("Send Now", systemImage: "paperplane.fill")
+                                        }
+                                        .tint(.blue)
+                                    }
+                                    
+                                    if reply.status.lowercased() == "queued" || reply.status.lowercased() == "generated" {
+                                        Button {
+                                            viewModel.scheduleReply(reply)
+                                        } label: {
+                                            Label("Schedule", systemImage: "calendar")
+                                        }
+                                        .tint(.orange)
+                                    }
+                                }
                         }
                     } header: {
                         Text("Replies")

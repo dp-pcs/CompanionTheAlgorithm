@@ -72,6 +72,27 @@ final class ReplyQueueViewModel: ObservableObject {
         load(status: status)
     }
     
+    func sendReplyNow(_ reply: DraftReply) {
+        print("📤 [ReplyQueue] Sending reply now: \(reply.id)")
+        // TODO: Implement send reply API call
+        // For now, show alert that feature needs backend endpoint
+        errorMessage = "Send feature requires backend API endpoint /api/v1/replies/{id}/send"
+    }
+    
+    func scheduleReply(_ reply: DraftReply) {
+        print("📅 [ReplyQueue] Scheduling reply: \(reply.id)")
+        // TODO: Implement schedule reply API call
+        // For now, show alert that feature needs backend endpoint
+        errorMessage = "Schedule feature requires backend API endpoint /api/v1/replies/{id}/schedule"
+    }
+    
+    func deleteReply(_ reply: DraftReply) {
+        print("🗑️ [ReplyQueue] Deleting reply: \(reply.id)")
+        // TODO: Implement delete reply API call
+        // For now, remove from local list
+        replies.removeAll { $0.id == reply.id }
+    }
+    
     private static func readableMessage(from error: Error) -> String {
         if let apiError = error as? APIClientError {
             switch apiError {

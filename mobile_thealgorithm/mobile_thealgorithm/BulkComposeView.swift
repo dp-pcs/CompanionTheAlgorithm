@@ -171,20 +171,39 @@ struct BulkComposeView: View {
                             .foregroundColor(.blue)
                     }
                 } footer: {
-                    if viewModel.approvedPosts.count > 1 {
-                        Button(action: scheduleAllApproved) {
-                            HStack {
-                                Image(systemName: "calendar.badge.clock")
-                                Text("Schedule All Approved Posts")
+                    if viewModel.approvedPosts.count > 0 {
+                        VStack(spacing: 12) {
+                            // Publish Immediately
+                            Button(action: publishAllApprovedNow) {
+                                HStack {
+                                    Image(systemName: "paperplane.fill")
+                                    Text("Publish All Approved Posts Now")
+                                        .fontWeight(.semibold)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.green.opacity(0.15))
+                                .foregroundColor(.green)
+                                .cornerRadius(8)
                             }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.blue.opacity(0.1))
-                            .foregroundColor(.blue)
-                            .cornerRadius(8)
+                            .buttonStyle(.plain)
+                            
+                            // Schedule
+                            Button(action: scheduleAllApproved) {
+                                HStack {
+                                    Image(systemName: "calendar.badge.clock")
+                                    Text("Schedule All Approved Posts")
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.blue.opacity(0.1))
+                                .foregroundColor(.blue)
+                                .cornerRadius(8)
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                         .listRowInsets(EdgeInsets())
+                        .padding(.top, 8)
                     }
                 }
             }
@@ -255,6 +274,11 @@ struct BulkComposeView: View {
     private func scheduleAllApproved() {
         postsToSchedule = viewModel.approvedPosts.map { $0.id }
         showSchedulingSheet = true
+    }
+    
+    private func publishAllApprovedNow() {
+        let postIds = viewModel.approvedPosts.map { $0.id }
+        viewModel.publishImmediate(postIds: postIds)
     }
     
     private func startNewSession() {
