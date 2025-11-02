@@ -41,26 +41,22 @@ private struct AuthenticationFlowView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color.blue.opacity(0.1),
-                        Color.purple.opacity(0.1)
-                    ]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+                // Clean white background matching the web app
+                Color(red: 245/255, green: 247/255, blue: 250/255)
+                    .ignoresSafeArea()
                 
                 ScrollView {
                     VStack(spacing: 24) {
-                        VStack(spacing: 8) {
-                            Image(systemName: "lock.shield.fill")
-                                .font(.system(size: 60))
-                                .foregroundStyle(.blue)
+                        VStack(spacing: 16) {
+                            Image("AlgorithmLogo")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 120, height: 120)
                                 .padding(.top, 40)
                             
                             Text("The Algorithm")
                                 .font(.system(size: 32, weight: .bold))
+                                .foregroundColor(Color(red: 46/255, green: 59/255, blue: 66/255))
                             
                             Text("Companion")
                                 .font(.system(size: 24, weight: .light))
@@ -505,7 +501,11 @@ struct MessageSectionView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(messageText.isEmpty ? Color.gray : Color.blue)
+                    .background(
+                        messageText.isEmpty ? 
+                        Color.gray :
+                        Color(red: 6/255, green: 182/255, blue: 212/255) // Bright Aqua accent from web
+                    )
                     .cornerRadius(12)
                 }
                 .disabled(messageText.isEmpty)
