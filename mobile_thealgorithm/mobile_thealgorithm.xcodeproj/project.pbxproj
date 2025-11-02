@@ -257,6 +257,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "mobile_thealgorithm-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "The Algorithm";
 				INFOPLIST_KEY_CFBundleURLTypes = "{\n    CFBundleTypeRole = Editor;\n    CFBundleURLName = \"proctorconsultingservices.The-Algorithm---Companion\";\n    CFBundleURLSchemes =     (\n        thealgorithm\n    );\n}";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -291,6 +292,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "mobile_thealgorithm-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "The Algorithm";
 				INFOPLIST_KEY_CFBundleURLTypes = "{\n    CFBundleTypeRole = Editor;\n    CFBundleURLName = \"proctorconsultingservices.The-Algorithm---Companion\";\n    CFBundleURLSchemes =     (\n        thealgorithm\n    );\n}";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

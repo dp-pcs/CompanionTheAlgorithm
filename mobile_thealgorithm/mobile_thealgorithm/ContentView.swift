@@ -82,7 +82,7 @@ private struct AuthenticationFlowView: View {
                             
                             AuthButton(
                                 title: "Authenticate with X.com",
-                                subtitle: "Step 2: Extract Session Cookies",
+                                subtitle: "Step 2: Login or use existing session",
                                 systemImage: "bird.fill",
                                 isEnabled: viewModel.hasOAuthToken && !viewModel.hasCookies,
                                 isComplete: viewModel.hasCookies,
@@ -287,7 +287,7 @@ private struct AuthenticationChecklistView: View {
 
             AuthButton(
                 title: viewModel.hasCookies ? "X.com Session Imported" : "Authenticate with X.com",
-                subtitle: "Step 2: Extract Session Cookies",
+                subtitle: "Step 2: Login or use existing session",
                 systemImage: "bird.fill",
                 isEnabled: viewModel.hasOAuthToken && !viewModel.hasCookies,
                 isComplete: viewModel.hasCookies,

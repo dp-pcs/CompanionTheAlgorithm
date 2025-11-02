@@ -592,14 +592,34 @@ extension AuthenticationManager: WKNavigationDelegate {
     }
     
     private func checkTwitterAuthenticationStatus(_ webView: WKWebView) {
-        // Check if we're on a page that indicates successful login
-        webView.evaluateJavaScript("document.location.href") { [weak self] result, error in
-            guard let urlString = result as? String,
-                  let url = URL(string: urlString) else { return }
+        // Always check for valid cookies when page finishes loading
+        // This works for both:
+        // 1. Users who just logged in
+        // 2. Users who are already logged in
+        webView.configuration.websiteDataStore.httpCookieStore.getAllCookies { [weak self] cookies in
+            // Check if we have valid auth cookies
+            let hasAuthToken = cookies.contains { cookie in
+                cookie.name == "auth_token" && 
+                (cookie.domain.contains("x.com") || cookie.domain.contains("twitter.com"))
+            }
             
-            // Check for successful login indicators
-            if url.path.contains("home") || url.path.contains("timeline") || urlString.contains("x.com/home") {
+            if hasAuthToken {
+                print("✅ Found existing auth_token cookie, extracting all cookies...")
                 self?.extractTwitterCookies(from: webView)
+            } else {
+                // No auth token yet, check if we're on a page that indicates successful login
+                webView.evaluateJavaScript("document.location.href") { result, error in
+                    guard let urlString = result as? String,
+                          let url = URL(string: urlString) else { return }
+                    
+                    // Check for successful login indicators
+                    if url.path.contains("home") || url.path.contains("timeline") || urlString.contains("x.com/home") {
+                        print("✅ On home page, attempting cookie extraction...")
+                        self?.extractTwitterCookies(from: webView)
+                    } else {
+                        print("ℹ️ On page: \(urlString) - waiting for login...")
+                    }
+                }
             }
         }
     }
