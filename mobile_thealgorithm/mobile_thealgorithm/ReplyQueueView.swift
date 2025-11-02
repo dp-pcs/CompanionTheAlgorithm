@@ -24,7 +24,52 @@ struct ReplyQueueView: View {
             } else if viewModel.replies.isEmpty {
                 emptyView
             } else {
-                List {
+                queueListView
+            }
+        }
+        .navigationTitle("Reply Queue")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                if !viewModel.replies.isEmpty {
+                    Button(isSelecting ? "Done" : "Select") {
+                        isSelecting.toggle()
+                        if !isSelecting {
+                            selectedReplyIds.removeAll()
+                        }
+                    }
+                }
+            }
+            
+            ToolbarItem(placement: .navigationBarTrailing) {
+                if viewModel.isLoading {
+                    ProgressView()
+                } else {
+                    statusFilterMenu
+                }
+            }
+        }
+        .task { await loadOnceIfNeeded() }
+        .onChange(of: isAuthenticated) { newValue in
+            guard newValue else { return }
+            viewModel.refresh()
+        }
+        .onChange(of: viewModel.replies) { replies in
+            // Show hint when replies first load
+            if !replies.isEmpty && !hasSeenSwipeHint && !showSwipeHint {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    showSwipeHint = true
+                }
+            }
+        }
+        .alert("Success", isPresented: $viewModel.showSuccessMessage) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(viewModel.successMessage)
+        }
+    }
+    
+    private var queueListView: some View {
+        List {
                     // Swipe Hint Banner
                     if showSwipeHint && !hasSeenSwipeHint {
                         Section {
@@ -185,26 +230,10 @@ struct ReplyQueueView: View {
                 }
                 .listStyle(.insetGrouped)
                 .refreshable { viewModel.refresh() }
-            }
-        }
-        .navigationTitle("Reply Queue")
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                if !viewModel.replies.isEmpty {
-                    Button(isSelecting ? "Done" : "Select") {
-                        isSelecting.toggle()
-                        if !isSelecting {
-                            selectedReplyIds.removeAll()
-                        }
-                    }
-                }
-            }
-            
-            ToolbarItem(placement: .navigationBarTrailing) {
-                if viewModel.isLoading {
-                    ProgressView()
-                } else {
-                    Menu {
+    }
+    
+    private var statusFilterMenu: some View {
+        Menu {
                         Button(action: { viewModel.changeStatus(to: "generated") }) {
                             if viewModel.selectedStatus == "generated" {
                                 Label("Generated", systemImage: "checkmark")
@@ -248,29 +277,8 @@ struct ReplyQueueView: View {
                                 Text("All")
                             }
                         }
-                    } label: {
-                        Image(systemName: "line.3.horizontal.decrease.circle")
-                    }
-                }
-            }
-        }
-        .task { await loadOnceIfNeeded() }
-        .onChange(of: isAuthenticated) { newValue in
-            guard newValue else { return }
-            viewModel.refresh()
-        }
-        .onChange(of: viewModel.replies) { replies in
-            // Show hint when replies first load
-            if !replies.isEmpty && !hasSeenSwipeHint && !showSwipeHint {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    showSwipeHint = true
-                }
-            }
-        }
-        .alert("Success", isPresented: $viewModel.showSuccessMessage) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text(viewModel.successMessage)
+        } label: {
+            Image(systemName: "line.3.horizontal.decrease.circle")
         }
     }
     
