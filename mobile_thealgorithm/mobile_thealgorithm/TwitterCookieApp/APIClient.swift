@@ -644,7 +644,7 @@ class APIClient {
             completion(.failure(APIClientError.requestFailed("Failed to encode request")))
             return
         }
-        performRequest(path: "/api/v1/replies/post", method: "POST", body: jsonData, completion: completion)
+        performRequest(path: "/api/v1/replies/post/", method: "POST", body: jsonData, completion: completion)
     }
     
     func scheduleReplyRandom(replyId: String, timeWindowHours: Int = 24, minIntervalMinutes: Int = 30, maxIntervalMinutes: Int = 120, completion: @escaping (Result<[String: String], Error>) -> Void) {
@@ -660,11 +660,11 @@ class APIClient {
             completion(.failure(APIClientError.requestFailed("Failed to encode request")))
             return
         }
-        performRequest(path: "/api/v1/engagement/queue/schedule-random", method: "POST", body: jsonData, completion: completion)
+        performRequest(path: "/api/v1/engagement/queue/schedule-random/", method: "POST", body: jsonData, completion: completion)
     }
     
     func deleteReply(replyId: String, completion: @escaping (Result<Bool, Error>) -> Void) {
-        performRequest(path: "/api/v1/replies/\(replyId)", method: "DELETE") { (result: Result<[String: String], Error>) in
+        performRequest(path: "/api/v1/replies/\(replyId)/", method: "DELETE") { (result: Result<[String: String], Error>) in
             switch result {
             case .success:
                 completion(.success(true))
