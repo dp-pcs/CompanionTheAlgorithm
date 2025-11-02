@@ -74,23 +74,69 @@ final class ReplyQueueViewModel: ObservableObject {
     
     func sendReplyNow(_ reply: DraftReply) {
         print("📤 [ReplyQueue] Sending reply now: \(reply.id)")
-        // TODO: Implement send reply API call
-        // For now, show alert that feature needs backend endpoint
-        errorMessage = "Send feature requires backend API endpoint /api/v1/replies/{id}/send"
+        isLoading = true
+        
+        apiClient.postReply(replyId: reply.id) { [weak self] result in
+            guard let self else { return }
+            self.isLoading = false
+            
+            switch result {
+            case .success:
+                print("✅ [ReplyQueue] Reply posted successfully!")
+                // Remove from local list and refresh
+                self.replies.removeAll { $0.id == reply.id }
+                self.refresh()
+            case .failure(let error):
+                print("❌ [ReplyQueue] Failed to post reply: \(error)")
+                self.errorMessage = "Failed to send reply: \(error.localizedDescription)"
+            }
+        }
     }
     
     func scheduleReply(_ reply: DraftReply) {
         print("📅 [ReplyQueue] Scheduling reply: \(reply.id)")
-        // TODO: Implement schedule reply API call
-        // For now, show alert that feature needs backend endpoint
-        errorMessage = "Schedule feature requires backend API endpoint /api/v1/replies/{id}/schedule"
+        isLoading = true
+        
+        // Schedule with default settings: 24hr window, 30-120 min intervals
+        apiClient.scheduleReplyRandom(
+            replyId: reply.id,
+            timeWindowHours: 24,
+            minIntervalMinutes: 30,
+            maxIntervalMinutes: 120
+        ) { [weak self] result in
+            guard let self else { return }
+            self.isLoading = false
+            
+            switch result {
+            case .success:
+                print("✅ [ReplyQueue] Reply scheduled successfully!")
+                // Remove from current list and refresh
+                self.replies.removeAll { $0.id == reply.id }
+                self.refresh()
+            case .failure(let error):
+                print("❌ [ReplyQueue] Failed to schedule reply: \(error)")
+                self.errorMessage = "Failed to schedule reply: \(error.localizedDescription)"
+            }
+        }
     }
     
     func deleteReply(_ reply: DraftReply) {
         print("🗑️ [ReplyQueue] Deleting reply: \(reply.id)")
-        // TODO: Implement delete reply API call
-        // For now, remove from local list
-        replies.removeAll { $0.id == reply.id }
+        isLoading = true
+        
+        apiClient.deleteReply(replyId: reply.id) { [weak self] result in
+            guard let self else { return }
+            self.isLoading = false
+            
+            switch result {
+            case .success:
+                print("✅ [ReplyQueue] Reply deleted successfully!")
+                self.replies.removeAll { $0.id == reply.id }
+            case .failure(let error):
+                print("❌ [ReplyQueue] Failed to delete reply: \(error)")
+                self.errorMessage = "Failed to delete reply: \(error.localizedDescription)"
+            }
+        }
     }
     
     private static func readableMessage(from error: Error) -> String {

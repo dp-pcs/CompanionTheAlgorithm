@@ -632,6 +632,43 @@ class APIClient {
         let items = [URLQueryItem(name: "status", value: status)]
         performRequest(path: "/api/v1/replies/", queryItems: items, completion: completion)  // Trailing slash to avoid 307 redirect
     }
+    
+    func postReply(replyId: String, completion: @escaping (Result<[String: String], Error>) -> Void) {
+        // POST /api/v1/replies/post - Send reply immediately
+        let body: [String: Any] = ["reply_id": replyId]
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: body) else {
+            completion(.failure(APIClientError.requestFailed("Failed to encode request")))
+            return
+        }
+        performRequest(path: "/api/v1/replies/post", method: "POST", body: jsonData, completion: completion)
+    }
+    
+    func scheduleReplyRandom(replyId: String, timeWindowHours: Int = 24, minIntervalMinutes: Int = 30, maxIntervalMinutes: Int = 120, completion: @escaping (Result<[String: String], Error>) -> Void) {
+        // POST /api/v1/engagement/queue/schedule-random - Schedule reply with random distribution
+        var body: [String: Any] = [
+            "reply_id": replyId,
+            "time_window_hours": timeWindowHours,
+            "min_interval_minutes": minIntervalMinutes,
+            "max_interval_minutes": maxIntervalMinutes
+        ]
+        
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: body) else {
+            completion(.failure(APIClientError.requestFailed("Failed to encode request")))
+            return
+        }
+        performRequest(path: "/api/v1/engagement/queue/schedule-random", method: "POST", body: jsonData, completion: completion)
+    }
+    
+    func deleteReply(replyId: String, completion: @escaping (Result<Bool, Error>) -> Void) {
+        performRequest(path: "/api/v1/replies/\(replyId)", method: "DELETE") { (result: Result<[String: String], Error>) in
+            switch result {
+            case .success:
+                completion(.success(true))
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+    }
 
     // MARK: User Management
 
