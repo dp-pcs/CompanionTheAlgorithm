@@ -77,14 +77,14 @@ final class ReplyQueueViewModel: ObservableObject {
     func sendReplyNow(_ reply: DraftReply) {
         print("📤 [ReplyQueue] Sending reply now: \(reply.id)")
         
-        guard let replyText = reply.replyText, !replyText.isEmpty else {
+        guard !reply.text.isEmpty else {
             errorMessage = "Reply has no text to send"
             return
         }
         
         isLoading = true
         
-        apiClient.postReply(replyId: reply.id, text: replyText) { [weak self] result in
+        apiClient.postReply(replyId: reply.id, text: reply.text) { [weak self] result in
             guard let self else { return }
             self.isLoading = false
             
@@ -162,13 +162,13 @@ final class ReplyQueueViewModel: ObservableObject {
         var failCount = 0
         
         for reply in replies {
-            guard let replyText = reply.replyText, !replyText.isEmpty else {
+            guard !reply.text.isEmpty else {
                 failCount += 1
                 continue
             }
             
             group.enter()
-            apiClient.postReply(replyId: reply.id, text: replyText) { [weak self] result in
+            apiClient.postReply(replyId: reply.id, text: reply.text) { [weak self] result in
                 switch result {
                 case .success:
                     successCount += 1
