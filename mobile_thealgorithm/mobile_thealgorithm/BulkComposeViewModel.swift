@@ -119,7 +119,7 @@ final class BulkComposeViewModel: ObservableObject {
                         self.posts[index] = updatedPost
                     }
                     // Refresh to get the actual updated post from backend
-                    if let sessionId = self.currentSessionId {
+                    if let sessionId = self.currentSession?.id {
                         self.loadPosts(sessionId: sessionId)
                     }
                 } else {
