@@ -176,6 +176,18 @@ struct PostingJobListResponse: Codable {
     let limit: Int
 }
 
+struct ReplyPostResponse: Codable {
+    let success: Bool
+    let tweetId: String?
+    let method: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case success
+        case tweetId = "tweet_id"
+        case method
+    }
+}
+
 struct DraftReply: Codable, Identifiable, Equatable {
     struct OriginalPost: Codable, Equatable {
         let id: String
@@ -633,7 +645,7 @@ class APIClient {
         performRequest(path: "/api/v1/replies/", queryItems: items, completion: completion)  // Trailing slash to avoid 307 redirect
     }
     
-    func postReply(replyId: String, text: String, completion: @escaping (Result<[String: String], Error>) -> Void) {
+    func postReply(replyId: String, text: String, completion: @escaping (Result<ReplyPostResponse, Error>) -> Void) {
         // POST /api/v1/replies/post - Send reply immediately
         // Backend requires both reply_id and text
         let body: [String: Any] = [

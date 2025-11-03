@@ -89,13 +89,18 @@ final class ReplyQueueViewModel: ObservableObject {
             self.isLoading = false
             
             switch result {
-            case .success:
-                print("✅ [ReplyQueue] Reply posted successfully!")
-                // Remove from local list and refresh
-                self.replies.removeAll { $0.id == reply.id }
-                self.successMessage = "Reply sent to Twitter! 🎉"
-                self.showSuccessMessage = true
-                self.refresh()
+            case .success(let response):
+                if response.success {
+                    print("✅ [ReplyQueue] Reply posted successfully! Tweet ID: \(response.tweetId ?? "unknown")")
+                    // Remove from local list and refresh to get updated status from backend
+                    self.replies.removeAll { $0.id == reply.id }
+                    self.successMessage = "Reply sent to Twitter! 🎉"
+                    self.showSuccessMessage = true
+                    self.refresh()
+                } else {
+                    print("⚠️ [ReplyQueue] Reply post returned success=false")
+                    self.errorMessage = "Failed to send reply"
+                }
             case .failure(let error):
                 print("❌ [ReplyQueue] Failed to post reply: \(error)")
                 self.errorMessage = "Failed to send reply: \(error.localizedDescription)"
@@ -170,9 +175,14 @@ final class ReplyQueueViewModel: ObservableObject {
             group.enter()
             apiClient.postReply(replyId: reply.id, text: reply.text) { [weak self] result in
                 switch result {
-                case .success:
-                    successCount += 1
-                    self?.replies.removeAll { $0.id == reply.id }
+                case .success(let response):
+                    if response.success {
+                        successCount += 1
+                        self?.replies.removeAll { $0.id == reply.id }
+                        print("✅ [ReplyQueue] Batch item posted! Tweet ID: \(response.tweetId ?? "unknown")")
+                    } else {
+                        failCount += 1
+                    }
                 case .failure:
                     failCount += 1
                 }

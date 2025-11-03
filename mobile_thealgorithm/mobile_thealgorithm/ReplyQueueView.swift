@@ -31,10 +31,23 @@ struct ReplyQueueView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 if !viewModel.replies.isEmpty {
-                    Button(isSelecting ? "Done" : "Select") {
-                        isSelecting.toggle()
-                        if !isSelecting {
-                            selectedReplyIds.removeAll()
+                    HStack(spacing: 16) {
+                        Button(isSelecting ? "Done" : "Select") {
+                            isSelecting.toggle()
+                            if !isSelecting {
+                                selectedReplyIds.removeAll()
+                            }
+                        }
+                        
+                        if isSelecting {
+                            Button(selectedReplyIds.count == viewModel.replies.count ? "Deselect All" : "Select All") {
+                                if selectedReplyIds.count == viewModel.replies.count {
+                                    selectedReplyIds.removeAll()
+                                } else {
+                                    selectedReplyIds = Set(viewModel.replies.map { $0.id })
+                                }
+                            }
+                            .font(.subheadline)
                         }
                     }
                 }
