@@ -109,10 +109,23 @@ final class BulkComposeViewModel: ObservableObject {
             guard let self else { return }
             
             switch result {
-            case .success(let updatedPost):
-                print("✅ [BulkCompose] Post approved: \(post.id)")
-                if let index = self.posts.firstIndex(where: { $0.id == post.id }) {
-                    self.posts[index] = updatedPost
+            case .success(let response):
+                if response.success {
+                    print("✅ [BulkCompose] Post approved: \(post.id)")
+                    // Update local status optimistically
+                    if let index = self.posts.firstIndex(where: { $0.id == post.id }) {
+                        var updatedPost = self.posts[index]
+                        updatedPost.status = "approved"
+                        self.posts[index] = updatedPost
+                    }
+                    // Refresh to get the actual updated post from backend
+                    if let sessionId = self.currentSessionId {
+                        self.loadPosts(sessionId: sessionId)
+                    }
+                } else {
+                    print("⚠️ [BulkCompose] Approve returned success=false")
+                    self.errorMessage = response.message ?? "Failed to approve post"
+                    self.showErrorAlert = true
                 }
                 
             case .failure(let error):

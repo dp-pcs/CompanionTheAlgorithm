@@ -188,6 +188,18 @@ struct ReplyPostResponse: Codable {
     }
 }
 
+struct ApprovePostResponse: Codable {
+    let success: Bool
+    let message: String?
+    let postId: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case success
+        case message
+        case postId = "post_id"
+    }
+}
+
 struct DraftReply: Codable, Identifiable, Equatable {
     struct OriginalPost: Codable, Equatable {
         let id: String
@@ -971,7 +983,7 @@ class APIClient {
         performRequest(path: "/api/v1/bulk-compose/sessions/\(sessionId)/posts", queryItems: items, completion: completion)
     }
     
-    func approvePost(postId: String, completion: @escaping (Result<BulkComposePost, Error>) -> Void) {
+    func approvePost(postId: String, completion: @escaping (Result<ApprovePostResponse, Error>) -> Void) {
         performRequest(path: "/api/v1/bulk-compose/posts/\(postId)/approve", method: "POST", completion: completion)
     }
     
