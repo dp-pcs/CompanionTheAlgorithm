@@ -316,7 +316,7 @@ final class BulkComposeViewModel: ObservableObject {
                     self.publishingStatus = status
                     
                     // Stop polling when all jobs are done
-                    if status.status.processing == 0 && status.status.queued == 0 {
+                    if status.status.publishing == 0 && status.status.pending == 0 {
                         self.stopPolling()
                         self.refresh()
                     }
