@@ -772,6 +772,9 @@ class APIClient {
         print("🌐 [API] \(method) \(url.absoluteString)")
         let tokenPreview = token.prefix(6)
         print("   ↳ bearer token prefix: \(tokenPreview)… (length: \(token.count))")
+        if let contentType = request.value(forHTTPHeaderField: "Content-Type") {
+            print("   ↳ Content-Type: \(contentType)")
+        }
         if let body,
            let bodyString = String(data: body, encoding: .utf8),
            !bodyString.isEmpty {
