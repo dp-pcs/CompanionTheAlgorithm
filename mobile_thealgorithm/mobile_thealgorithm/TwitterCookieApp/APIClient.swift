@@ -318,30 +318,47 @@ struct BulkComposeSession: Codable, Identifiable {
 
 struct PublishingStatus: Codable {
     struct JobStatus: Codable {
-        let total: Int
-        let queued: Int
-        let scheduled: Int
-        let processing: Int
-        let completed: Int
+        let totalJobs: Int
+        let pending: Int
+        let publishing: Int
+        let published: Int
         let failed: Int
+        let scheduled: Int
+        
+        enum CodingKeys: String, CodingKey {
+            case totalJobs = "total_jobs"
+            case pending, publishing, published, failed, scheduled
+        }
     }
     
     struct Job: Codable {
         let id: String
+        let postId: String
+        let postText: String
         let status: String
         let scheduledFor: Date?
-        let method: String
-        let text: String
-        let createdAt: Date
-        let completedAt: Date?
+        let publishedAt: Date?
         let errorMessage: String?
+        let retryCount: Int?
+        let maxRetries: Int?
+        let postingMethod: String?
+        let manualPostRequired: Bool?
+        let manualPostUrl: String?
+        let manualPostText: String?
         
         enum CodingKeys: String, CodingKey {
-            case id, status, method, text
+            case id, status
+            case postId = "post_id"
+            case postText = "post_text"
             case scheduledFor = "scheduled_for"
-            case createdAt = "created_at"
-            case completedAt = "completed_at"
+            case publishedAt = "published_at"
             case errorMessage = "error_message"
+            case retryCount = "retry_count"
+            case maxRetries = "max_retries"
+            case postingMethod = "posting_method"
+            case manualPostRequired = "manual_post_required"
+            case manualPostUrl = "manual_post_url"
+            case manualPostText = "manual_post_text"
         }
     }
     

@@ -253,15 +253,42 @@ final class BulkComposeViewModel: ObservableObject {
             
             switch result {
             case .success(let status):
-                print("✅ [BulkCompose] Published: \(status.status.scheduled + status.status.completed) posts")
                 self.publishingStatus = status
-                self.successMessage = "Publishing \(status.status.scheduled + status.status.completed) posts"
+                
+                // Build user-friendly message
+                var messages: [String] = []
+                if status.status.published > 0 {
+                    messages.append("\(status.status.published) published")
+                }
+                if status.status.scheduled > 0 {
+                    messages.append("\(status.status.scheduled) scheduled")
+                }
+                if status.status.failed > 0 {
+                    messages.append("\(status.status.failed) failed")
+                }
+                if status.status.pending > 0 || status.status.publishing > 0 {
+                    messages.append("\(status.status.pending + status.status.publishing) in progress")
+                }
+                
+                let message = messages.isEmpty ? "Posts processing" : messages.joined(separator: ", ")
+                print("✅ [BulkCompose] Result: \(message)")
+                
+                // Show details for failed jobs
+                for job in status.jobs where job.status == "failed" {
+                    if let error = job.errorMessage {
+                        print("⚠️ [BulkCompose] Failed job: \(error)")
+                    }
+                }
+                
+                self.successMessage = message.prefix(1).uppercased() + message.dropFirst()
                 self.showSuccessAlert = true
                 self.refresh()
                 
-                // Start polling for status updates
-                if let sessionId = self.currentSession?.id {
-                    self.startPollingStatus(sessionId: sessionId)
+                // Start polling for status updates if there are pending jobs
+                if status.status.pending > 0 || status.status.publishing > 0 {
+                    if let sessionId = self.currentSession?.id {
+                        self.startPollingStatus(sessionId: sessionId)
+                    }
                 }
                 
             case .failure(let error):
