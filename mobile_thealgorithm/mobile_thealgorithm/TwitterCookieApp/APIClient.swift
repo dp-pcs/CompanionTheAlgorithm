@@ -537,11 +537,35 @@ struct BulkOperationResult: Codable {
     }
 }
 
+// Subscription error details from 402 responses
+struct SubscriptionError: Codable {
+    let error: String
+    let message: String
+    let subscriptionStatus: String?
+    let daysExpired: Int?
+    let trialEndDate: String?
+    let upgradeUrl: String
+    
+    enum CodingKeys: String, CodingKey {
+        case error, message
+        case subscriptionStatus = "subscription_status"
+        case daysExpired = "days_expired"
+        case trialEndDate = "trial_end_date"
+        case upgradeUrl = "upgrade_url"
+    }
+}
+
 enum APIClientError: Error {
     case invalidURL
     case missingAuthToken
     case decodingFailed(Error)
     case requestFailed(String)
+    case subscriptionRequired(SubscriptionError)
+}
+
+// Notification for subscription errors
+extension Notification.Name {
+    static let subscriptionRequired = Notification.Name("subscriptionRequired")
 }
 
 // MARK: - API Client
@@ -839,6 +863,30 @@ class APIClient {
 #endif
                     completion(.failure(APIClientError.requestFailed("Invalid response")))
                     return
+                }
+
+                // Check for subscription required (402 Payment Required)
+                if httpResponse.statusCode == 402 {
+#if DEBUG
+                    print("🔒 [API] 402 Payment Required - subscription expired")
+#endif
+                    if let data = data,
+                       let errorResponse = try? JSONDecoder().decode([String: SubscriptionError].self, from: data),
+                       let subscriptionError = errorResponse["detail"] {
+#if DEBUG
+                        print("   ↳ \(subscriptionError.message)")
+                        if let days = subscriptionError.daysExpired {
+                            print("   ↳ Expired \(days) day(s) ago")
+                        }
+#endif
+                        // Post notification for UI to handle
+                        NotificationCenter.default.post(
+                            name: .subscriptionRequired,
+                            object: subscriptionError
+                        )
+                        completion(.failure(APIClientError.subscriptionRequired(subscriptionError)))
+                        return
+                    }
                 }
 
                 guard (200...299).contains(httpResponse.statusCode) else {

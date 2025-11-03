@@ -9,20 +9,49 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var viewModel = AuthenticationViewModel()
+    @StateObject private var subscriptionManager = SubscriptionManager()
     @State private var showAuthenticationFlow = false
     
     var body: some View {
-        DashboardView(viewModel: viewModel) {
+        DashboardView(
+            viewModel: viewModel,
+            subscriptionManager: subscriptionManager
+        ) {
             showAuthenticationFlow = true
         }
-        .onAppear { updateAuthenticationPresentation() }
-        .onChange(of: viewModel.hasOAuthToken) { _ in updateAuthenticationPresentation() }
-        .onChange(of: viewModel.hasCookies) { _ in updateAuthenticationPresentation() }
+        .onAppear {
+            updateAuthenticationPresentation()
+            checkSubscriptionIfAuthenticated()
+        }
+        .onChange(of: viewModel.hasOAuthToken) { _ in
+            updateAuthenticationPresentation()
+            checkSubscriptionIfAuthenticated()
+        }
+        .onChange(of: viewModel.hasCookies) { _ in
+            updateAuthenticationPresentation()
+            checkSubscriptionIfAuthenticated()
+        }
         .fullScreenCover(isPresented: $showAuthenticationFlow) {
             AuthenticationFlowView(viewModel: viewModel) {
                 updateAuthenticationPresentation()
+                checkSubscriptionIfAuthenticated()
             }
             .interactiveDismissDisabled(!(viewModel.hasOAuthToken && viewModel.hasCookies))
+        }
+        .sheet(isPresented: $subscriptionManager.showPaywall) {
+            SubscriptionPaywallView(
+                subscriptionManager: subscriptionManager,
+                authViewModel: viewModel
+            )
+        }
+    }
+    
+    private func checkSubscriptionIfAuthenticated() {
+        let isAuthenticated = viewModel.hasOAuthToken && viewModel.hasCookies
+        if isAuthenticated {
+            // Check subscription status after authentication
+            let apiClient = APIClient(authManager: viewModel.authManager)
+            subscriptionManager.checkSubscriptionStatus(apiClient: apiClient)
         }
     }
     
@@ -37,6 +66,7 @@ struct ContentView: View {
 private struct AuthenticationFlowView: View {
     @ObservedObject var viewModel: AuthenticationViewModel
     let dismissAction: () -> Void
+    @State private var isViewReady = false
     
     var body: some View {
         NavigationView {
@@ -53,6 +83,8 @@ private struct AuthenticationFlowView: View {
                                 .aspectRatio(contentMode: .fit)
                                 .frame(width: 120, height: 120)
                                 .padding(.top, 40)
+                                .opacity(isViewReady ? 1 : 0)
+                                .animation(.easeIn(duration: 0.3), value: isViewReady)
                             
                             Text("The Algorithm")
                                 .font(.system(size: 32, weight: .bold))
@@ -97,6 +129,12 @@ private struct AuthenticationFlowView: View {
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                // Defer heavy work slightly to let UI render first
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    isViewReady = true
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
@@ -150,6 +188,7 @@ private struct AuthenticationFlowView: View {
 
 private struct DashboardView: View {
     @ObservedObject var viewModel: AuthenticationViewModel
+    @ObservedObject var subscriptionManager: SubscriptionManager
     let onRequestAuthenticationFlow: () -> Void
     @State private var queueBadgeCount: Int = 0
     
@@ -160,6 +199,13 @@ private struct DashboardView: View {
             NavigationStack {
                 ScrollView {
                     VStack(spacing: 24) {
+                        // Trial status banner (shown for free/starter users)
+                        if isAuthenticated {
+                            TrialStatusBanner(planTier: subscriptionManager.planTier) {
+                                subscriptionManager.openPricingPage()
+                            }
+                        }
+                        
                         StatusCardView(viewModel: viewModel)
                         AuthenticationChecklistView(viewModel: viewModel, onRequestAuthFlow: onRequestAuthenticationFlow)
                         if viewModel.hasOAuthToken && viewModel.hasCookies {
