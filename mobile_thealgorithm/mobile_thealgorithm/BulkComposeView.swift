@@ -121,7 +121,7 @@ struct BulkComposeView: View {
     private var postsListView: some View {
         List {
             // Publishing Status
-            if let status = viewModel.publishingStatus, status.status.processing > 0 || status.status.queued > 0 {
+            if let status = viewModel.publishingStatus, status.status.publishing > 0 || status.status.pending > 0 {
                 Section {
                     PublishingStatusView(status: status)
                 }
@@ -421,17 +421,17 @@ private struct PublishingStatusView: View {
                 .font(.headline)
             
             HStack(spacing: 20) {
-                StatusBadge(count: status.status.queued, label: "Queued", color: .gray)
-                StatusBadge(count: status.status.processing, label: "Processing", color: .blue)
+                StatusBadge(count: status.status.pending, label: "Pending", color: .gray)
+                StatusBadge(count: status.status.publishing, label: "Publishing", color: .blue)
                 StatusBadge(count: status.status.scheduled, label: "Scheduled", color: .orange)
             }
             
             HStack(spacing: 20) {
-                StatusBadge(count: status.status.completed, label: "Completed", color: .green)
+                StatusBadge(count: status.status.published, label: "Published", color: .green)
                 StatusBadge(count: status.status.failed, label: "Failed", color: .red)
             }
             
-            if status.status.processing > 0 {
+            if status.status.publishing > 0 {
                 ProgressView()
                     .frame(maxWidth: .infinity)
             }
